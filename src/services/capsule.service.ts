@@ -16,10 +16,12 @@ export interface Capsule {
   id: string;
   name: string;
   duration: string; // '1d', '1w', '1m', '1y'
+  password?: string; // Optional password for private joint capsules
   type: 'system' | 'user';
   createdDate: string;
   creatorId: string; // 'system' or userId
   items: CapsuleItem[];
+  archivedDate?: string; // If present, it's an archived capsule
 }
 
 @Injectable({
@@ -28,18 +30,30 @@ export interface Capsule {
 export class CapsuleService {
   private readonly CAPSULES_KEY = 'tc_capsules';
   private readonly SYSTEM_CAPSULES_KEY = 'tc_system_capsules';
+  private readonly ARCHIVES_KEY = 'tc_archives';
 
   capsules = signal<Capsule[]>([]);
+  archives = signal<Capsule[]>([]);
 
   constructor() {
     this.loadCapsules();
+    this.loadArchives();
   }
 
   private loadCapsules() {
-    // Load User Capsules
     const stored = localStorage.getItem(this.CAPSULES_KEY);
     if (stored) {
       this.capsules.set(JSON.parse(stored));
+    }
+  }
+  
+  private loadArchives() {
+    const stored = localStorage.getItem(this.ARCHIVES_KEY);
+    if (stored) {
+       // Sort archives by date desc
+       const list: Capsule[] = JSON.parse(stored);
+       list.sort((a, b) => new Date(b.archivedDate!).getTime() - new Date(a.archivedDate!).getTime());
+       this.archives.set(list);
     }
   }
 
@@ -59,12 +73,16 @@ export class CapsuleService {
   }
 
   getExpirationDate(capsule: Capsule): Date {
+    // If it's archived, it's already expired effectively, but we use archivedDate for display
+    if (capsule.archivedDate) return new Date(capsule.archivedDate);
+    
     const created = new Date(capsule.createdDate).getTime();
     const duration = this.getDurationInMillis(capsule.duration);
     return new Date(created + duration);
   }
 
   isExpired(capsule: Capsule): boolean {
+    if (capsule.archivedDate) return true;
     const now = new Date().getTime();
     const expireTime = this.getExpirationDate(capsule).getTime();
     return now >= expireTime;
@@ -72,11 +90,12 @@ export class CapsuleService {
 
   // --- User Capsule Logic ---
 
-  createCapsule(name: string, duration: string, creatorId: string): string {
+  createCapsule(name: string, duration: string, creatorId: string, password?: string): string {
     const newCapsule: Capsule = {
       id: crypto.randomUUID(),
       name,
       duration,
+      password: password || undefined,
       type: 'user',
       createdDate: new Date().toISOString(),
       creatorId,
@@ -98,16 +117,13 @@ export class CapsuleService {
     const month = now.getMonth();
     const date = now.getDate();
     
-    // Deterministic ID generation based on time periods
     if (duration === '1d') return `sys_1d_${year}_${month}_${date}`;
-    
     if (duration === '1w') {
       const oneJan = new Date(year, 0, 1);
       const numberOfDays = Math.floor((now.getTime() - oneJan.getTime()) / (24 * 60 * 60 * 1000));
       const week = Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
       return `sys_1w_${year}_w${week}`;
     }
-    
     if (duration === '1m') return `sys_1m_${year}_${month}`;
     if (duration === '1y') return `sys_1y_${year}`;
     
@@ -117,14 +133,12 @@ export class CapsuleService {
   getSystemCapsule(duration: '1d' | '1w' | '1m' | '1y'): Capsule {
     const id = this.getSystemCapsuleId(duration);
     
-    // Try to find in storage first
     const storedSys = localStorage.getItem(this.SYSTEM_CAPSULES_KEY);
     let sysCapsules: Capsule[] = storedSys ? JSON.parse(storedSys) : [];
     
     let capsule = sysCapsules.find(c => c.id === id);
 
     if (!capsule) {
-      // Create fresh system capsule
       const names = {
         '1d': '24시간 공개 캡슐',
         '1w': '7일 공개 캡슐',
@@ -152,34 +166,33 @@ export class CapsuleService {
   // --- Shared Logic ---
 
   getCapsule(id: string): Capsule | undefined {
-    // Check if it's a system ID
+    // 1. Check Archives first
+    const archives = this.archives();
+    const archived = archives.find(c => c.id === id);
+    if (archived) return archived;
+
+    // 2. Check System
     if (id.startsWith('sys_')) {
       const storedSys = localStorage.getItem(this.SYSTEM_CAPSULES_KEY);
       const sysCapsules: Capsule[] = storedSys ? JSON.parse(storedSys) : [];
       return sysCapsules.find(c => c.id === id);
     }
 
-    // Otherwise check user capsules
-    this.loadCapsules(); // Sync
+    // 3. Check User
+    this.loadCapsules();
     return this.capsules().find(c => c.id === id);
   }
 
   updateCapsuleItems(capsuleId: string, items: CapsuleItem[]) {
-    // Check expiration before updating (unless it's a reset action, but here we just check generally)
-    // For reset, we will use a dedicated method
     const capsule = this.getCapsule(capsuleId);
-    if (capsule && this.isExpired(capsule)) {
-       return; // Read-only mode
-    }
+    if (capsule && this.isExpired(capsule)) return;
 
     this.saveItemsInternal(capsuleId, items);
   }
 
   addItemToCapsule(capsuleId: string, item: CapsuleItem) {
     const capsule = this.getCapsule(capsuleId);
-    if (capsule && this.isExpired(capsule)) {
-       return; // Read-only mode
-    }
+    if (capsule && this.isExpired(capsule)) return;
 
     if (capsuleId.startsWith('sys_')) {
       const storedSys = localStorage.getItem(this.SYSTEM_CAPSULES_KEY);
@@ -200,20 +213,32 @@ export class CapsuleService {
     }
   }
 
-  resetCapsule(capsuleId: string) {
-    // 0. Safety Check: Must be expired to reset
+  // --- Archive & Reset Logic ---
+
+  archiveAndResetCapsule(capsuleId: string) {
     const target = this.getCapsule(capsuleId);
     if (!target) return;
-    if (!this.isExpired(target)) {
-        console.warn('Cannot reset active capsule');
-        return; 
-    }
 
-    // 1. Reset Items to empty
-    // 2. Reset Created Date to NOW
+    // 1. Create Archive Copy
+    const archivedCapsule: Capsule = {
+      ...target,
+      id: `archive_${Date.now()}_${target.id}`, // Unique ID for archive
+      archivedDate: new Date().toISOString(),
+      name: `${target.name} (보관됨)`,
+      items: JSON.parse(JSON.stringify(target.items)) // Deep copy
+    };
+
+    // Save to Archives
+    const currentArchives = this.archives();
+    const newArchives = [archivedCapsule, ...currentArchives];
+    this.archives.set(newArchives);
+    localStorage.setItem(this.ARCHIVES_KEY, JSON.stringify(newArchives));
+
+    // 2. Reset the Original Capsule (Initialize)
     const now = new Date().toISOString();
 
     if (capsuleId.startsWith('sys_')) {
+      // For System Capsules: Clear items, reset date
       const storedSys = localStorage.getItem(this.SYSTEM_CAPSULES_KEY);
       let sysCapsules: Capsule[] = storedSys ? JSON.parse(storedSys) : [];
       const index = sysCapsules.findIndex(c => c.id === capsuleId);
@@ -223,6 +248,8 @@ export class CapsuleService {
         localStorage.setItem(this.SYSTEM_CAPSULES_KEY, JSON.stringify(sysCapsules));
       }
     } else {
+      // For User Capsules: Just reset content for reuse or could delete. 
+      // User request implies "initialize", so we clear it.
       const all = this.capsules();
       const index = all.findIndex(c => c.id === capsuleId);
       if (index !== -1) {

@@ -3,68 +3,94 @@ import { Router } from '@angular/router';
 
 export interface User {
   id: string;
-  email: string;
-  name: string;
-  password?: string;
+  username: string; // Unique ID (e.g., hero99)
+  name: string;     // Display Name (e.g., 김철수)
+  passwordHash?: string; // Storing Hash only
   avatarColor: string;
-  provider: 'email'; 
+  createdAt: number;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly USERS_KEY = 'tc_users';
-  private readonly CURRENT_USER_KEY = 'tc_current_user';
+  private readonly USERS_KEY = 'tc_users_v2'; // Changed key to avoid conflict with old email data
+  private readonly CURRENT_USER_KEY = 'tc_session_v2';
   
   private router = inject(Router);
 
   currentUser = signal<User | null>(null);
 
   constructor() {
-    this.loadUser();
+    this.loadSession();
   }
 
-  private loadUser() {
+  private loadSession() {
     const stored = localStorage.getItem(this.CURRENT_USER_KEY);
     if (stored) {
       this.currentUser.set(JSON.parse(stored));
     }
   }
 
-  // --- Email Login ---
-
-  login(email: string, password: string): boolean {
-    const users = this.getUsers();
-    const user = users.find(u => u.email === email && u.password === password);
-    if (user) {
-      this.setCurrentUser(user);
-      return true;
-    }
-    return false;
+  // --- Crypto Helper (Client-side Hashing Simulation) ---
+  
+  private async hashPassword(password: string): Promise<string> {
+    const msgBuffer = new TextEncoder().encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return `$sha256$${hashHex}`; // Simulating a structured hash format
   }
 
-  register(name: string, email: string, password: string): boolean {
+  // --- Authentication Methods ---
+
+  async login(username: string, password: string): Promise<{ success: boolean; message?: string }> {
     const users = this.getUsers();
-    if (users.some(u => u.email === email)) {
-      return false; // Email taken
+    const user = users.find(u => u.username === username);
+    
+    if (!user || !user.passwordHash) {
+      // Simulate delay for security (prevent timing attacks)
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return { success: false, message: '아이디 또는 비밀번호가 일치하지 않습니다.' };
     }
 
+    const inputHash = await this.hashPassword(password);
+    
+    if (inputHash === user.passwordHash) {
+      this.createSession(user);
+      return { success: true };
+    }
+
+    return { success: false, message: '아이디 또는 비밀번호가 일치하지 않습니다.' };
+  }
+
+  async register(username: string, name: string, password: string): Promise<{ success: boolean; message?: string }> {
+    const users = this.getUsers();
+    
+    // 1. Check ID uniqueness
+    if (users.some(u => u.username === username)) {
+      return { success: false, message: '이미 사용 중인 아이디입니다.' };
+    }
+
+    // 2. Hash Password
+    const passwordHash = await this.hashPassword(password);
+
+    // 3. Create User
     const newUser: User = {
       id: crypto.randomUUID(),
+      username,
       name,
-      email,
-      password,
+      passwordHash,
       avatarColor: this.getRandomColor(),
-      provider: 'email'
+      createdAt: Date.now()
     };
 
     this.saveUser(newUser);
-    this.setCurrentUser(newUser);
-    return true;
+    this.createSession(newUser); // Auto login after register
+    return { success: true };
   }
 
-  // --- Common ---
+  // --- Session Management ---
 
   logout() {
     this.currentUser.set(null);
@@ -72,9 +98,14 @@ export class AuthService {
     this.router.navigate(['/login']);
   }
 
-  private setCurrentUser(user: User) {
-    this.currentUser.set(user);
-    localStorage.setItem(this.CURRENT_USER_KEY, JSON.stringify(user));
+  private createSession(user: User) {
+    // In a real app, we would store a session ID, not the whole user object.
+    // For this client-only demo, we store the user info (excluding sensitive data is better, but simplified here).
+    const sessionUser = { ...user };
+    delete sessionUser.passwordHash; // Never keep hash in session storage if possible
+    
+    this.currentUser.set(sessionUser);
+    localStorage.setItem(this.CURRENT_USER_KEY, JSON.stringify(sessionUser));
   }
 
   private getUsers(): User[] {

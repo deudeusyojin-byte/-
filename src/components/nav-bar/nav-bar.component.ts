@@ -18,9 +18,8 @@ import { CommonModule } from '@angular/common';
           
           <div class="hidden md:flex gap-1">
             <a routerLink="/home" routerLinkActive="bg-gray-100 text-gray-900" [routerLinkActiveOptions]="{exact: true}" class="px-5 py-2 rounded-full text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition">홈</a>
-            @if (authService.currentUser()) {
-              <a routerLink="/home" class="px-5 py-2 rounded-full text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition">보관함</a>
-            }
+            <!-- Always visible Archive Link -->
+            <a routerLink="/home" fragment="my-capsules" class="px-5 py-2 rounded-full text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition cursor-pointer">보관함</a>
           </div>
         </div>
 
@@ -30,7 +29,7 @@ import { CommonModule } from '@angular/common';
             <div class="flex items-center pl-6 border-l border-gray-200 gap-4">
               <div class="flex flex-col items-end hidden sm:flex text-right">
                 <span class="text-sm font-bold text-gray-900">{{ authService.currentUser()?.name }}</span>
-                <span class="text-[10px] text-gray-400 font-mono">Member</span>
+                <span class="text-[10px] text-gray-400 font-mono">@ {{ authService.currentUser()?.username }}</span>
               </div>
               <div 
                 class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md ring-2 ring-white"
@@ -67,15 +66,20 @@ import { CommonModule } from '@angular/common';
         <div class="md:hidden border-t border-gray-100 bg-white absolute w-full left-0 shadow-lg animate-fade-in">
            <div class="p-4 flex flex-col gap-2">
               <a routerLink="/home" (click)="toggleMenu()" class="px-4 py-3 rounded-lg hover:bg-gray-50 font-medium text-gray-700">홈</a>
+              <a routerLink="/home" fragment="my-capsules" (click)="toggleMenu()" class="px-4 py-3 rounded-lg hover:bg-gray-50 font-medium text-gray-700">보관함</a>
+              
               @if (authService.currentUser()) {
-                <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-100 mb-2">
+                <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-100 mb-2 mt-2">
                    <div 
                     class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm"
                     [style.background-color]="authService.currentUser()?.avatarColor"
                    >
                     {{ authService.currentUser()?.name?.charAt(0) }}
                    </div>
-                   <span class="font-bold text-gray-900">{{ authService.currentUser()?.name }}</span>
+                   <div class="flex flex-col">
+                      <span class="font-bold text-gray-900">{{ authService.currentUser()?.name }}</span>
+                      <span class="text-xs text-gray-400">@ {{ authService.currentUser()?.username }}</span>
+                   </div>
                 </div>
                 <button (click)="authService.logout()" class="text-left px-4 py-3 rounded-lg hover:bg-red-50 text-red-600 font-medium">로그아웃</button>
               } @else {

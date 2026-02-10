@@ -9,31 +9,65 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { interval, Subscription } from 'rxjs';
 
+declare var html2canvas: any; // Declare for TS
+
 @Component({
   selector: 'app-capsule-detail',
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule, DatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="h-screen w-screen flex flex-col bg-gray-100 overflow-hidden font-sans text-gray-900 relative select-none">
+    <!-- Mobile: Use 100dvh to fix address bar jumping issues -->
+    <div class="h-[100dvh] w-screen flex flex-col bg-gray-100 overflow-hidden font-sans text-gray-900 relative select-none touch-none overscroll-none">
       
-      <!-- Top Bar with Timer (Fixed) -->
+      <!-- Lock Screen for Password Protection -->
+      @if (isLocked()) {
+        <div class="fixed inset-0 z-[100] bg-stone-900 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+           <div class="w-20 h-20 bg-stone-800 rounded-full flex items-center justify-center mb-8 border-2 border-stone-700 shadow-2xl">
+              <svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+           </div>
+           
+           <h2 class="text-3xl font-bold text-white mb-2">프라이빗 캡슐</h2>
+           <p class="text-stone-400 mb-8 max-w-md break-keep">이 캡슐은 참여 코드가 필요합니다.<br>초대받은 비밀번호를 입력해주세요.</p>
+
+           <div class="w-full max-w-xs space-y-4">
+              <input 
+                 #passwordInput
+                 type="password" 
+                 class="w-full px-6 py-4 rounded-xl bg-stone-800 border border-stone-700 text-white placeholder-stone-500 text-center font-bold text-xl tracking-widest outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+                 placeholder="PASSCODE"
+                 (keyup.enter)="unlock(passwordInput.value)"
+              >
+              <button (click)="unlock(passwordInput.value)" class="w-full py-4 bg-white text-stone-900 font-bold rounded-xl hover:bg-gray-100 transition shadow-lg transform active:scale-95">
+                 입장하기
+              </button>
+              
+              @if (lockError()) {
+                 <p class="text-red-500 text-sm font-bold animate-pulse">비밀번호가 올바르지 않습니다.</p>
+              }
+
+              <button (click)="goBack()" class="block w-full py-4 text-stone-500 text-sm hover:text-stone-300 transition">돌아가기</button>
+           </div>
+        </div>
+      }
+
+      <!-- Top Bar -->
       <header class="fixed top-0 left-0 right-0 z-50 p-3 md:p-4 pointer-events-none flex justify-between items-start h-16 md:h-20">
         <!-- Back & Title -->
         <div class="pointer-events-auto flex items-center gap-2 md:gap-3 z-50">
-           <button (click)="goBack()" class="bg-white w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-md text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition">
+           <button (click)="goBack()" class="bg-white w-10 h-10 rounded-full flex items-center justify-center shadow-md text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition active:scale-95">
              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
            </button>
            <div class="bg-white/90 backdrop-blur px-3 py-1.5 md:px-4 md:py-2 rounded-full shadow-md border border-gray-200 flex items-center gap-2 hidden sm:flex">
              <h1 class="font-bold text-xs md:text-sm text-gray-800 max-w-[100px] md:max-w-xs truncate">{{ capsule()?.name }}</h1>
-             @if (isReadOnly()) { <span class="text-[10px] text-red-500 font-bold whitespace-nowrap">ARCHIVED</span> }
+             @if (isReadOnly()) { <span class="text-[10px] text-gray-500 font-bold whitespace-nowrap bg-gray-100 px-2 py-0.5 rounded-full border border-gray-300">READ ONLY</span> }
            </div>
         </div>
 
         <!-- Center Timer -->
         <div class="pointer-events-none absolute left-1/2 transform -translate-x-1/2 top-3 md:top-4 z-40 w-full flex justify-center">
-           <div class="bg-black/80 backdrop-blur-md text-white px-3 py-1.5 md:px-6 md:py-2 rounded-full shadow-xl flex items-center gap-2 md:gap-3 border border-white/10 transition-all" [class.bg-red-900]="isReadOnly()">
-              <span class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full flex-shrink-0" [class.bg-red-500]="!isReadOnly()" [class.animate-pulse]="!isReadOnly()" [class.bg-gray-500]="isReadOnly()"></span>
+           <div class="bg-black/80 backdrop-blur-md text-white px-4 py-2 md:px-6 md:py-2 rounded-full shadow-xl flex items-center gap-2 md:gap-3 border border-white/10 transition-all" [class.bg-gray-800]="isReadOnly()">
+              <span class="w-2 h-2 rounded-full flex-shrink-0" [class.bg-red-500]="!isReadOnly()" [class.animate-pulse]="!isReadOnly()" [class.bg-gray-500]="isReadOnly()"></span>
               <div class="font-mono text-sm md:text-xl font-bold tracking-widest whitespace-nowrap">
                 {{ timeLeft() }}
               </div>
@@ -44,78 +78,78 @@ import { interval, Subscription } from 'rxjs';
         <div class="pointer-events-auto flex items-center gap-2 md:gap-3 z-50">
           <div class="bg-white/90 backdrop-blur px-2 py-1.5 md:px-3 md:py-2 rounded-full shadow-md border border-gray-200 flex -space-x-2 hidden md:flex">
              @for (cursor of otherCursors().slice(0,3); track cursor.userId) {
-                <div class="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[10px] text-white font-bold" [style.background-color]="cursor.color">
+                <div class="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs text-white font-bold" [style.background-color]="cursor.color">
                    {{ cursor.userName.charAt(0) }}
                 </div>
              }
-             <div class="w-6 h-6 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-[10px] text-gray-500 font-bold">
+             <div class="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-xs text-gray-500 font-bold">
                 {{ otherCursors().length + 1 }}
              </div>
           </div>
 
-          <button (click)="toggleSidebar()" class="bg-white w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-md text-gray-500 hover:text-indigo-600 transition relative">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
+          <button (click)="toggleSidebar()" class="bg-white w-10 h-10 rounded-full flex items-center justify-center shadow-md text-gray-500 hover:text-indigo-600 transition relative active:scale-95">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
               @if (chatMessages().length > 0) {
-                 <span class="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+                 <span class="absolute top-0 right-0 w-3 h-3 bg-red-500 border-2 border-white rounded-full"></span>
               }
           </button>
         </div>
       </header>
       
       <!-- Zoom Controls (Bottom Left) -->
-      <div class="fixed bottom-32 md:bottom-8 left-4 z-40 flex flex-col gap-2">
+      <div class="fixed bottom-28 md:bottom-8 left-4 z-40 flex flex-col gap-2">
          <div class="bg-white/90 backdrop-blur rounded-lg shadow-lg border border-gray-200 flex flex-col overflow-hidden">
-            <button (click)="zoomIn()" class="p-2 hover:bg-gray-100 text-gray-600 border-b border-gray-100">
+            <button (click)="zoomIn()" class="p-3 hover:bg-gray-100 text-gray-600 border-b border-gray-100 active:bg-gray-200">
                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
             </button>
-            <button (click)="resetZoom()" class="p-2 text-xs font-bold text-gray-500 hover:bg-gray-100">
+            <button (click)="resetZoom()" class="p-2 text-xs font-bold text-gray-500 hover:bg-gray-100 active:bg-gray-200">
                {{ (zoomScale() * 100).toFixed(0) }}%
             </button>
-            <button (click)="zoomOut()" class="p-2 hover:bg-gray-100 text-gray-600 border-t border-gray-100">
+            <button (click)="zoomOut()" class="p-3 hover:bg-gray-100 text-gray-600 border-t border-gray-100 active:bg-gray-200">
                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" /></svg>
             </button>
          </div>
       </div>
 
       <!-- Bottom Toolbar (Fixed) -->
-      @if (!isReadOnly()) {
-        <div class="fixed bottom-6 md:bottom-8 left-1/2 transform -translate-x-1/2 z-40 pointer-events-none w-full max-w-fit px-4">
-          <div class="bg-white/95 backdrop-blur-md border border-gray-200 px-2 py-2 shadow-2xl rounded-2xl flex gap-1 md:gap-2 pointer-events-auto overflow-x-auto max-w-[95vw] custom-scrollbar">
+      @if (!isReadOnly() && !isLocked()) {
+        <div class="fixed bottom-6 md:bottom-8 left-0 right-0 z-40 pointer-events-none flex justify-center px-4">
+          <div class="bg-white/95 backdrop-blur-md border border-gray-200 px-3 py-2 shadow-2xl rounded-2xl flex gap-1 md:gap-2 pointer-events-auto overflow-x-auto max-w-full custom-scrollbar touch-pan-x">
              <!-- Tools -->
              <button 
                 (click)="activeTool.set('cursor')"
                 [class.bg-gray-900]="activeTool() === 'cursor'" 
                 [class.text-white]="activeTool() === 'cursor'" 
                 [class.text-gray-400]="activeTool() !== 'cursor'"
-                class="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 flex items-center justify-center rounded-xl hover:bg-gray-100 hover:text-gray-900 transition-all"
+                class="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-xl transition-all active:scale-95"
                 title="이동"
               >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
               </button>
               
               <div class="w-px bg-gray-200 my-2 mx-1"></div>
               
-              <button (click)="openMediaModal('image')" class="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 flex items-center justify-center rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all" title="사진">
+              <button (click)="openMediaModal('image')" class="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all active:scale-95" title="사진">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
               </button>
 
-              <button (click)="openMediaModal('gif')" class="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 flex items-center justify-center rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all" title="GIF">
+              <button (click)="openMediaModal('gif')" class="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all active:scale-95" title="GIF">
                 <span class="font-bold text-xs">GIF</span>
               </button>
 
-               <button (click)="openMediaModal('video')" class="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 flex items-center justify-center rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all" title="동영상">
+               <button (click)="openMediaModal('video')" class="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all active:scale-95" title="동영상">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
               </button>
                
-              <button (click)="openDrawingModal()" class="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 flex items-center justify-center rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all" title="그리기">
+              <button (click)="openDrawingModal()" class="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all active:scale-95" title="그리기">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
               </button>
 
-               <button (click)="addTextPrompt()" class="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 flex items-center justify-center rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all" title="글쓰기">
+               <button (click)="addTextPrompt()" class="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all active:scale-95" title="글쓰기">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
               </button>
 
-              <button (click)="openMediaModal('audio')" class="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 flex items-center justify-center rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all" title="오디오/음성녹음">
+              <button (click)="openMediaModal('audio')" class="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-xl text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all active:scale-95" title="오디오/음성녹음">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
               </button>
           </div>
@@ -125,26 +159,31 @@ import { interval, Subscription } from 'rxjs';
       <div class="flex flex-1 overflow-hidden relative">
         <!-- Sidebar (Chat) -->
         <div 
-          class="bg-white/95 backdrop-blur-md border-l border-gray-200 w-full md:w-80 flex flex-col transition-transform duration-300 absolute right-0 z-50 h-full shadow-2xl"
+          class="bg-white/95 backdrop-blur-md border-l border-gray-200 w-full md:w-96 flex flex-col transition-transform duration-300 absolute right-0 top-0 bottom-0 z-50 shadow-2xl"
           [class.translate-x-full]="!isSidebarOpen()"
           [class.translate-x-0]="isSidebarOpen()"
         >
           <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-             <span class="font-bold text-gray-800">대화</span>
-             <button (click)="isSidebarOpen.set(false)" class="text-gray-400 hover:text-gray-600">✕</button>
+             <div class="flex items-center gap-2">
+               <span class="font-bold text-gray-800 text-lg">대화</span>
+               <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{{ chatMessages().length }}</span>
+             </div>
+             <button (click)="isSidebarOpen.set(false)" class="p-2 -mr-2 text-gray-400 hover:text-gray-600 active:bg-gray-200 rounded-full">
+               <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+             </button>
           </div>
           
           <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
             @for (msg of chatMessages(); track msg.id) {
               <div class="flex flex-col animate-fade-in" [class.items-end]="msg.userId === currentUser()?.id" [class.items-start]="msg.userId !== currentUser()?.id">
-                 <div class="flex items-end gap-2 max-w-[90%]">
+                 <div class="flex items-end gap-2 max-w-[85%]">
                     @if (msg.userId !== currentUser()?.id) {
-                       <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] text-white font-bold shrink-0 shadow-sm" [style.background-color]="msg.color">
+                       <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs text-white font-bold shrink-0 shadow-sm" [style.background-color]="msg.color">
                           {{ msg.userName.charAt(0) }}
                        </div>
                     }
                     <div 
-                      class="px-3 py-2 text-sm"
+                      class="px-4 py-2.5 text-base md:text-sm"
                       [class.bg-gray-800]="msg.userId === currentUser()?.id"
                       [class.text-white]="msg.userId === currentUser()?.id"
                       [class.rounded-2xl]="true"
@@ -156,21 +195,21 @@ import { interval, Subscription } from 'rxjs';
                       {{ msg.text }}
                     </div>
                  </div>
-                 <span class="text-[9px] text-gray-400 mt-1 mx-1">{{ msg.timestamp | date:'shortTime' }}</span>
+                 <span class="text-[10px] text-gray-400 mt-1 mx-1">{{ msg.timestamp | date:'shortTime' }}</span>
               </div>
             }
           </div>
 
-          <div class="p-3 bg-white border-t border-gray-100">
+          <div class="p-3 bg-white border-t border-gray-100 safe-area-pb">
              <form (submit)="sendChat($event)" class="flex gap-2 relative">
                <input 
                  #chatInput
                  type="text" 
-                 class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition" 
+                 class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-base focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition" 
                  placeholder="메시지 입력..."
                >
-               <button type="submit" class="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+               <button type="submit" class="p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition active:scale-95 shadow-sm">
+                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
                </button>
              </form>
           </div>
@@ -179,7 +218,7 @@ import { interval, Subscription } from 'rxjs';
         <!-- Main Canvas -->
         <div 
           #canvasContainer
-          class="flex-1 overflow-hidden bg-gray-100 relative custom-scrollbar touch-none w-full h-full"
+          class="flex-1 overflow-hidden bg-gray-100 relative custom-scrollbar w-full h-full overscroll-none touch-none"
           [class.cursor-grab]="!isDragging() && !isPanning"
           [class.cursor-grabbing]="isPanning"
           [class.cursor-move]="isDragging()"
@@ -200,6 +239,7 @@ import { interval, Subscription } from 'rxjs';
              [style.transform]="'translate3d(' + panX() + 'px, ' + panY() + 'px, 0) scale(' + zoomScale() + ')'"
           >
             <div 
+              #captureArea
               class="bg-white shadow-xl relative"
               style="width: 2000px; height: 2000px;"
             >
@@ -224,77 +264,81 @@ import { interval, Subscription } from 'rxjs';
                  </div>
               }
 
-              <!-- Items -->
-              @for (item of items(); track item.id) {
-                <div 
-                  class="absolute group cursor-move select-none"
-                  [style.left.px]="item.x"
-                  [style.top.px]="item.y"
-                  [style.width.px]="item.width"
-                  [style.zIndex]="item.zIndex"
-                  (mousedown)="startDrag($event, item)"
-                  (touchstart)="startDragTouch($event, item)"
-                  (touchend)="onMouseUp()"
-                >
+              <!-- Items (Optimized with translate3d) -->
+              @if (!isLocked()) {
+                @for (item of items(); track item.id) {
                   <div 
-                    class="relative transition-all duration-200 ring-2 ring-transparent group-hover:ring-indigo-300 shadow-md bg-white rounded-lg overflow-hidden"
-                    [class.ring-indigo-500]="isDragging() && draggedItem()?.id === item.id"
-                    [class.shadow-2xl]="isDragging() && draggedItem()?.id === item.id"
-                    [class.scale-[1.02]]="isDragging() && draggedItem()?.id === item.id"
+                    class="absolute group cursor-move select-none will-change-transform"
+                    [style.transform]="'translate3d(' + item.x + 'px, ' + item.y + 'px, 0)'"
+                    [style.width.px]="item.width"
+                    [style.zIndex]="item.zIndex"
+                    (mousedown)="startDrag($event, item)"
+                    (touchstart)="startDragTouch($event, item)"
+                    (touchend)="onMouseUp()"
                   >
-                     @switch (item.type) {
-                        @case ('image') {
-                          <img [src]="item.content" class="w-full h-auto object-cover pointer-events-none block">
-                        }
-                        @case ('gif') {
-                          <img [src]="item.content" class="w-full h-auto object-cover pointer-events-none block" alt="GIF">
-                        }
-                        @case ('drawing') {
-                          <img [src]="item.content" class="w-full h-auto pointer-events-none block bg-transparent">
-                        }
-                        @case ('video') {
-                          <video [src]="item.content" controls class="w-full h-auto bg-black"></video>
-                        }
-                        @case ('audio') {
-                           <div class="p-3 bg-gray-50 flex items-center justify-center min-w-[200px] border border-gray-100">
-                             <audio [src]="item.content" controls class="w-full h-8"></audio>
-                           </div>
-                        }
-                        @default {
-                          <div class="p-6 bg-yellow-50 border border-yellow-100 text-gray-800 text-lg min-h-[100px] flex items-center justify-center text-center whitespace-pre-wrap leading-relaxed">
-                            {{ item.content }}
-                          </div>
-                        }
-                     }
+                    <!-- Content Wrapper -->
+                    <div 
+                      class="relative transition-all duration-200 ring-2 ring-transparent group-hover:ring-indigo-300 shadow-md bg-white rounded-lg overflow-hidden"
+                      [class.ring-indigo-500]="isDragging() && draggedItem()?.id === item.id"
+                      [class.shadow-2xl]="isDragging() && draggedItem()?.id === item.id"
+                      [class.scale-[1.02]]="isDragging() && draggedItem()?.id === item.id"
+                    >
+                       @switch (item.type) {
+                          @case ('image') {
+                            <img [src]="item.content" class="w-full h-auto object-cover pointer-events-none block select-none" loading="lazy">
+                          }
+                          @case ('gif') {
+                            <img [src]="item.content" class="w-full h-auto object-cover pointer-events-none block select-none" alt="GIF" loading="lazy">
+                          }
+                          @case ('drawing') {
+                            <img [src]="item.content" class="w-full h-auto pointer-events-none block bg-transparent select-none" loading="lazy">
+                          }
+                          @case ('video') {
+                            <video [src]="item.content" controls class="w-full h-auto bg-black"></video>
+                          }
+                          @case ('audio') {
+                             <div class="p-3 bg-gray-50 flex items-center justify-center min-w-[200px] border border-gray-100">
+                               <audio [src]="item.content" controls class="w-full h-8"></audio>
+                             </div>
+                          }
+                          @default {
+                            <div class="p-6 bg-yellow-50 border border-yellow-100 text-gray-800 text-lg min-h-[100px] flex items-center justify-center text-center whitespace-pre-wrap leading-relaxed select-none">
+                              {{ item.content }}
+                            </div>
+                          }
+                       }
+                    </div>
                   </div>
-                </div>
+                }
               }
 
-              <!-- Remote Cursors -->
-              @for (cursor of otherCursors(); track cursor.userId) {
-                 <div 
-                   class="absolute pointer-events-none transition-transform duration-100 ease-linear z-[9999]"
-                   [style.transform]="'translate(' + cursor.x + 'px, ' + cursor.y + 'px)'"
-                 >
-                    <!-- Digital Arrow Cursor -->
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                       <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" [attr.fill]="cursor.color" stroke="white" stroke-width="2"/>
-                    </svg>
-                    <div 
-                      class="absolute left-4 top-4 px-2 py-0.5 bg-gray-900 text-white text-[10px] font-bold rounded shadow-sm whitespace-nowrap origin-top-left"
-                      [style.transform]="'scale(' + (1/zoomScale()) + ')'"
-                      [style.background-color]="cursor.color"
-                    >
-                      {{ cursor.userName }}
-                    </div>
-                 </div>
+              <!-- Remote Cursors (Optimized with translate3d) -->
+              @if (!isCapturing && !isLocked()) {
+                @for (cursor of otherCursors(); track cursor.userId) {
+                   <div 
+                     class="absolute pointer-events-none transition-transform duration-100 ease-linear z-[9999] will-change-transform"
+                     [style.transform]="'translate3d(' + cursor.x + 'px, ' + cursor.y + 'px, 0)'"
+                   >
+                      <!-- Digital Arrow Cursor -->
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                         <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" [attr.fill]="cursor.color" stroke="white" stroke-width="2"/>
+                      </svg>
+                      <div 
+                        class="absolute left-4 top-4 px-2 py-0.5 bg-gray-900 text-white text-[10px] font-bold rounded shadow-sm whitespace-nowrap origin-top-left"
+                        [style.transform]="'scale(' + (1/zoomScale()) + ')'"
+                        [style.background-color]="cursor.color"
+                      >
+                        {{ cursor.userName }}
+                      </div>
+                   </div>
+                }
               }
             </div>
           </div>
         </div>
         
-        <!-- Notifications (Fixed) -->
-        <div class="fixed bottom-32 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none z-50 w-full px-4">
+        <!-- Notifications -->
+        <div class="fixed bottom-36 md:bottom-32 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none z-50 w-full px-4">
            @for (note of notifications(); track note) {
               <div class="bg-gray-800/90 backdrop-blur text-white text-sm px-6 py-2 rounded-full shadow-lg animate-fade-in">
                 {{ note }}
@@ -319,206 +363,225 @@ import { interval, Subscription } from 'rxjs';
                  <div class="bg-white p-6 rounded-xl shadow-inner border border-stone-200 mb-6 rotate-1">
                     <h3 class="font-handwriting text-2xl text-stone-800 mb-2">"{{ capsule()?.name }}"</h3>
                     <p class="text-xs text-stone-400 font-mono uppercase tracking-widest">{{ capsule()?.createdDate | date:'mediumDate' }} — {{ expirationDate | date:'mediumDate' }}</p>
+                    <p class="text-xs text-stone-400 mt-2">{{ items().length }}개의 기억</p>
                  </div>
 
-                 <p class="text-sm text-stone-400 mb-8">
-                    이 캡슐은 이제 <b>읽기 전용</b> 저장소로 이동되었습니다.<br>
-                    더 이상 수정할 수 없지만, 언제든 열어볼 수 있습니다.
+                 <p class="text-sm text-stone-400 mb-6 break-keep">
+                    이 캡슐은 이제 <b>'지난 추억 보관함'</b>으로 이동합니다.<br>
+                    캔버스는 초기화되어 새로운 추억을 기다리게 됩니다.
                  </p>
-
+                 
                  <div class="flex flex-col gap-3 justify-center">
-                    <button (click)="resetCapsule()" class="w-full px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition shadow-lg flex items-center justify-center gap-2">
-                       <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                       <span>새로운 여정 시작하기 (Reset)</span>
+                    <button (click)="downloadSnapshot()" class="w-full px-6 py-3 bg-white border border-stone-300 hover:bg-stone-50 text-stone-800 rounded-xl font-bold transition shadow-sm flex items-center justify-center gap-2">
+                       <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                       <span>기억 다운로드 (이미지)</span>
                     </button>
-                    <div class="flex gap-3">
-                       <button (click)="goBack()" class="flex-1 px-6 py-3 bg-stone-200 hover:bg-stone-300 text-stone-700 rounded-xl font-bold transition">홈으로</button>
-                       <button (click)="showExpirationModal.set(false)" class="flex-1 px-6 py-3 bg-stone-900 hover:bg-black text-white rounded-xl font-bold transition">구경하기</button>
-                    </div>
+
+                    <button (click)="archiveAndResetCapsule()" class="w-full px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition shadow-lg flex items-center justify-center gap-2">
+                       <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+                       <span>보관함에 저장하고 초기화</span>
+                    </button>
+                    
+                    <button (click)="goBack()" class="flex-1 px-6 py-3 text-sm text-stone-400 hover:text-stone-600 font-medium transition mt-2">홈으로 돌아가기</button>
                  </div>
               </div>
            </div>
         </div>
       }
 
-      <!-- Media Modal (Reused) -->
-      @if (showMediaModal()) {
-        <div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div class="bg-white shadow-2xl w-full max-w-lg animate-fade-in rounded-2xl overflow-hidden h-[600px] flex flex-col">
-             <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 flex-shrink-0">
-                 <h3 class="text-lg font-bold text-gray-900 capitalize">
-                    {{ mediaType() === 'gif' ? 'GIF 검색' : mediaType() + ' 추가' }}
-                 </h3>
-                 <button (click)="showMediaModal.set(false)" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                 </button>
-             </div>
-            
-            <div class="p-4 grid grid-cols-3 gap-2 flex-shrink-0">
-               @if (mediaType() === 'image') {
-                 <button (click)="mediaTab.set('gen')" class="py-2 text-sm font-bold rounded-lg transition-all" [class.bg-indigo-600]="mediaTab() === 'gen'" [class.text-white]="mediaTab() === 'gen'" [class.bg-gray-100]="mediaTab() !== 'gen'" [class.text-gray-500]="mediaTab() !== 'gen'">AI 생성</button>
-               }
-               @if (mediaType() === 'audio') {
-                 <button (click)="mediaTab.set('record')" class="py-2 text-sm font-bold rounded-lg transition-all" [class.bg-indigo-600]="mediaTab() === 'record'" [class.text-white]="mediaTab() === 'record'" [class.bg-gray-100]="mediaTab() !== 'record'" [class.text-gray-500]="mediaTab() !== 'record'">녹음</button>
-               }
-               @if (mediaType() === 'gif') {
-                  <button class="py-2 text-sm font-bold rounded-lg bg-indigo-600 text-white col-span-3">GIF 검색</button>
-               } @else {
-                  <button (click)="mediaTab.set('file')" class="py-2 text-sm font-bold rounded-lg transition-all" [class.bg-indigo-600]="mediaTab() === 'file'" [class.text-white]="mediaTab() === 'file'" [class.bg-gray-100]="mediaTab() !== 'file'" [class.text-gray-500]="mediaTab() !== 'file'">업로드</button>
-                  <button (click)="mediaTab.set('url')" class="py-2 text-sm font-bold rounded-lg transition-all" [class.bg-indigo-600]="mediaTab() === 'url'" [class.text-white]="mediaTab() === 'url'" [class.bg-gray-100]="mediaTab() !== 'url'" [class.text-gray-500]="mediaTab() !== 'url'">링크</button>
-               }
-            </div>
-
-            <div class="px-6 pb-6 flex-1 overflow-y-auto bg-gray-50">
-              @if (mediaTab() === 'gen' && mediaType() === 'image') {
-                <div class="space-y-4">
-                   <textarea 
-                      #promptInput
-                      class="w-full bg-white border border-gray-200 p-3 rounded-xl text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none resize-none h-32" 
-                      placeholder="생성할 이미지를 묘사해주세요..."
-                    ></textarea>
-                   <button 
-                      (click)="generateImage(promptInput.value)" 
-                      [disabled]="isGenerating()"
-                      class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 transition"
-                    >
-                      @if (isGenerating()) { <span class="animate-pulse">생성 중...</span> }
-                      @else { 생성하기 }
-                    </button>
-                </div>
-              } @else if (mediaType() === 'gif') {
-                 <div class="space-y-4">
-                    <div class="sticky top-0 z-10 bg-gray-50 pt-1 pb-4">
-                       <div class="flex gap-2">
-                          <input 
-                            #gifSearchInput
-                            type="text"
-                            class="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none shadow-sm"
-                            placeholder="GIF 검색 (예: 웃긴, 고양이...)"
-                            (keyup.enter)="searchGifs(gifSearchInput.value)"
-                          >
-                          <button (click)="searchGifs(gifSearchInput.value)" class="bg-indigo-600 text-white px-4 rounded-xl hover:bg-indigo-700 transition shadow-sm">
-                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                          </button>
-                       </div>
-                    </div>
-                    
-                    @if (showGifFallback()) {
-                       <div class="text-center py-2 text-xs text-gray-500 animate-fade-in bg-yellow-50 border border-yellow-100 rounded-lg p-2">
-                          🧐 "<b>{{ lastGifQuery }}</b>"에 대한 정확한 결과가 없어 인기 짤들을 모아봤어요!
-                       </div>
-                    }
-                    
-                    <div class="columns-2 md:columns-3 gap-4 px-1 pb-4 space-y-4">
-                       @for (gif of gifResults(); track gif) {
-                          <div (click)="addMediaUrl(gif, 'gif')" class="break-inside-avoid cursor-pointer rounded-xl overflow-hidden border border-gray-200 hover:ring-4 hover:ring-indigo-300 transition-all duration-300 bg-gray-100 shadow-sm hover:shadow-md group relative">
-                             <img [src]="gif" class="w-full h-auto block" loading="lazy">
-                          </div>
-                       }
-                    </div>
-                 </div>
-              } @else if (mediaTab() === 'record' && mediaType() === 'audio') {
-                 <div class="text-center py-8">
-                    @if (!isRecording) {
-                       <button (click)="startRecording()" class="w-20 h-20 bg-red-500 rounded-full shadow-lg flex items-center justify-center mx-auto hover:bg-red-600 transition hover:scale-105">
-                          <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
-                       </button>
-                       <p class="mt-4 text-gray-500 font-bold">버튼을 눌러 녹음 시작</p>
-                    } @else {
-                       <div class="w-20 h-20 bg-white border-4 border-red-500 rounded-full shadow-lg flex items-center justify-center mx-auto animate-pulse cursor-pointer" (click)="stopRecording()">
-                          <div class="w-8 h-8 bg-red-500 rounded-md"></div>
-                       </div>
-                       <p class="mt-4 text-red-500 font-bold animate-pulse">녹음 중...</p>
-                    }
-                 </div>
-              } @else if (mediaTab() === 'file') {
-                <div class="border-2 border-dashed border-gray-300 bg-white rounded-xl py-12 text-center hover:bg-gray-50 cursor-pointer transition h-full flex flex-col justify-center" (click)="fileInput.click()">
-                  <input #fileInput type="file" [accept]="getFileAccept()" class="hidden" (change)="onFileSelected($event)">
-                  <span class="block text-gray-400 mb-1">파일 선택</span>
-                  <span class="text-xs text-gray-300">
-                     @if(mediaType() === 'image') { (JPG, PNG, GIF) }
-                     @if(mediaType() === 'video') { (MP4, WEBM) }
-                     @if(mediaType() === 'audio') { (MP3, WAV) }
-                  </span>
-                </div>
-              } @else {
-                 <div class="space-y-4">
-                   <input 
-                     #urlInput
-                     type="text" 
-                     class="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
-                     placeholder="https://..."
-                   >
-                   <button (click)="addMediaUrl(urlInput.value)" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition">추가하기</button>
-                 </div>
-              }
-            </div>
-          </div>
-        </div>
-      }
-
-      <!-- Drawing Modal (Reused) -->
-      @if (showDrawingModal()) {
-        <div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-           <div class="bg-white rounded-2xl shadow-2xl w-full h-full md:w-auto md:h-auto md:max-w-5xl flex flex-col overflow-hidden">
-              <div class="flex justify-between items-center p-4 border-b border-gray-100">
-                 <h3 class="font-bold text-lg">스케치</h3>
-                 <div class="flex gap-2">
-                    <button (click)="showDrawingModal.set(false)" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm font-bold">취소</button>
-                    <button (click)="saveDrawing()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700">저장</button>
-                 </div>
+      <!-- Media Modal (Lazy Loaded with @defer) -->
+      @defer (when showMediaModal()) {
+        @if (showMediaModal()) {
+          <div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+            <div class="bg-white shadow-2xl w-full max-w-lg rounded-2xl overflow-hidden h-[600px] flex flex-col">
+               <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 flex-shrink-0">
+                   <h3 class="text-lg font-bold text-gray-900 capitalize">
+                      {{ mediaType() === 'gif' ? 'GIF 검색' : mediaType() + ' 추가' }}
+                   </h3>
+                   <button (click)="showMediaModal.set(false)" class="p-2 -mr-2 text-gray-400 hover:text-gray-600">
+                      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                   </button>
+               </div>
+              
+              <div class="p-4 grid grid-cols-3 gap-2 flex-shrink-0">
+                 @if (mediaType() === 'image') {
+                   <button (click)="mediaTab.set('gen')" class="py-2 text-sm font-bold rounded-lg transition-all" [class.bg-indigo-600]="mediaTab() === 'gen'" [class.text-white]="mediaTab() === 'gen'" [class.bg-gray-100]="mediaTab() !== 'gen'" [class.text-gray-500]="mediaTab() !== 'gen'">AI 생성</button>
+                 }
+                 @if (mediaType() === 'audio') {
+                   <button (click)="mediaTab.set('record')" class="py-2 text-sm font-bold rounded-lg transition-all" [class.bg-indigo-600]="mediaTab() === 'record'" [class.text-white]="mediaTab() === 'record'" [class.bg-gray-100]="mediaTab() !== 'record'" [class.text-gray-500]="mediaTab() !== 'record'">녹음</button>
+                 }
+                 @if (mediaType() === 'gif') {
+                    <button class="py-2 text-sm font-bold rounded-lg bg-indigo-600 text-white col-span-3">GIF 검색</button>
+                 } @else {
+                    <button (click)="mediaTab.set('file')" class="py-2 text-sm font-bold rounded-lg transition-all" [class.bg-indigo-600]="mediaTab() === 'file'" [class.text-white]="mediaTab() === 'file'" [class.bg-gray-100]="mediaTab() !== 'file'" [class.text-gray-500]="mediaTab() !== 'file'">업로드</button>
+                    <button (click)="mediaTab.set('url')" class="py-2 text-sm font-bold rounded-lg transition-all" [class.bg-indigo-600]="mediaTab() === 'url'" [class.text-white]="mediaTab() === 'url'" [class.bg-gray-100]="mediaTab() !== 'url'" [class.text-gray-500]="mediaTab() !== 'url'">링크</button>
+                 }
               </div>
 
-              <div class="flex flex-col md:flex-row h-full">
-                <!-- Palette -->
-                <div class="bg-gray-50 p-4 border-r border-gray-200 md:w-48 space-y-6 flex flex-row md:flex-col overflow-x-auto md:overflow-visible">
-                   <div>
-                      <label class="text-xs font-bold text-gray-400 block mb-2">COLOR</label>
-                      <div class="grid grid-cols-8 md:grid-cols-4 gap-2">
-                         @for (color of palette; track color) {
-                           <button 
-                             (click)="setDrawColor(color)" 
-                             class="w-8 h-8 rounded-lg shadow-sm border border-black/10 transition-transform hover:scale-110 flex-shrink-0"
-                             [style.background-color]="color"
-                             [class.ring-2]="drawColor === color"
-                             [class.ring-offset-1]="drawColor === color"
-                             [class.ring-indigo-500]="drawColor === color"
-                           ></button>
+              <div class="px-6 pb-6 flex-1 overflow-y-auto bg-gray-50 custom-scrollbar">
+                @if (mediaTab() === 'gen' && mediaType() === 'image') {
+                  <div class="space-y-4">
+                     <textarea 
+                        #promptInput
+                        class="w-full bg-white border border-gray-200 p-3 rounded-xl text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none resize-none h-32" 
+                        placeholder="생성할 이미지를 묘사해주세요..."
+                      ></textarea>
+                     <button 
+                        (click)="generateImage(promptInput.value)" 
+                        [disabled]="isGenerating()"
+                        class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 transition"
+                      >
+                        @if (isGenerating()) { <span class="animate-pulse">생성 중...</span> }
+                        @else { 생성하기 }
+                      </button>
+                  </div>
+                } @else if (mediaType() === 'gif') {
+                   <div class="space-y-4">
+                      <div class="sticky top-0 z-10 bg-gray-50 pt-1 pb-4">
+                         <div class="flex gap-2">
+                            <input 
+                              #gifSearchInput
+                              type="text"
+                              class="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none shadow-sm"
+                              placeholder="GIF 검색 (예: 웃긴, 고양이...)"
+                              (keyup.enter)="searchGifs(gifSearchInput.value)"
+                            >
+                            <button (click)="searchGifs(gifSearchInput.value)" class="bg-indigo-600 text-white px-4 rounded-xl hover:bg-indigo-700 transition shadow-sm">
+                               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            </button>
+                         </div>
+                      </div>
+                      
+                      @if (showGifFallback()) {
+                         <div class="text-center py-2 text-xs text-gray-500 animate-fade-in bg-yellow-50 border border-yellow-100 rounded-lg p-2">
+                            🧐 "<b>{{ lastGifQuery }}</b>"에 대한 정확한 결과가 없어 인기 짤들을 모아봤어요!
+                         </div>
+                      }
+                      
+                      <div class="columns-2 md:columns-3 gap-4 px-1 pb-4 space-y-4">
+                         @for (gif of gifResults(); track gif) {
+                            <div (click)="addMediaUrl(gif, 'gif')" class="break-inside-avoid cursor-pointer rounded-xl overflow-hidden border border-gray-200 hover:ring-4 hover:ring-indigo-300 transition-all duration-300 bg-gray-100 shadow-sm hover:shadow-md group relative">
+                               <img [src]="gif" class="w-full h-auto block" loading="lazy">
+                            </div>
                          }
                       </div>
                    </div>
-                   
-                   <div class="hidden md:block">
-                      <label class="text-xs font-bold text-gray-400 block mb-2">SIZE: {{ lineWidth }}px</label>
-                      <input type="range" min="1" max="20" [(ngModel)]="lineWidth" (change)="updateLineWidth()" class="w-full accent-indigo-600 h-2 bg-gray-200 rounded-full appearance-none">
+                } @else if (mediaTab() === 'record' && mediaType() === 'audio') {
+                   <div class="text-center py-8">
+                      @if (!isRecording) {
+                         <button (click)="startRecording()" class="w-20 h-20 bg-red-500 rounded-full shadow-lg flex items-center justify-center mx-auto hover:bg-red-600 transition hover:scale-105 active:scale-95">
+                            <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+                         </button>
+                         <p class="mt-4 text-gray-500 font-bold">버튼을 눌러 녹음 시작</p>
+                      } @else {
+                         <div class="w-20 h-20 bg-white border-4 border-red-500 rounded-full shadow-lg flex items-center justify-center mx-auto animate-pulse cursor-pointer" (click)="stopRecording()">
+                            <div class="w-8 h-8 bg-red-500 rounded-md"></div>
+                         </div>
+                         <p class="mt-4 text-red-500 font-bold animate-pulse">녹음 중...</p>
+                      }
                    </div>
-
-                   <button (click)="clearDrawing()" class="w-full py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold text-red-500 hover:bg-red-50 hidden md:block">초기화</button>
-                </div>
-
-                <div class="flex-1 bg-gray-200 overflow-hidden flex items-center justify-center p-4">
-                   <canvas 
-                    #drawingCanvas 
-                    width="800" 
-                    height="600" 
-                    class="bg-white shadow-lg cursor-crosshair touch-none rounded-lg max-w-full h-auto"
-                    (mousedown)="startDrawing($event)"
-                    (mousemove)="draw($event)"
-                    (mouseup)="stopDrawing()"
-                    (mouseleave)="stopDrawing()"
-                    (touchstart)="startDrawingTouch($event)"
-                    (touchmove)="drawTouch($event)"
-                    (touchend)="stopDrawing()"
-                  ></canvas>
-                </div>
+                } @else if (mediaTab() === 'file') {
+                  <div class="border-2 border-dashed border-gray-300 bg-white rounded-xl py-12 text-center hover:bg-gray-50 cursor-pointer transition h-full flex flex-col justify-center" (click)="fileInput.click()">
+                    <input #fileInput type="file" [accept]="getFileAccept()" class="hidden" (change)="onFileSelected($event)">
+                    <span class="block text-gray-400 mb-1">파일 선택</span>
+                    <span class="text-xs text-gray-300">
+                       @if(mediaType() === 'image') { (JPG, PNG, GIF) }
+                       @if(mediaType() === 'video') { (MP4, WEBM) }
+                       @if(mediaType() === 'audio') { (MP3, WAV) }
+                    </span>
+                  </div>
+                } @else {
+                   <div class="space-y-4">
+                     <input 
+                       #urlInput
+                       type="text" 
+                       class="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                       placeholder="https://..."
+                     >
+                     <button (click)="addMediaUrl(urlInput.value)" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition active:scale-95">추가하기</button>
+                   </div>
+                }
               </div>
-           </div>
-        </div>
+            </div>
+          </div>
+        }
+      }
+
+      <!-- Drawing Modal (Lazy Loaded with @defer) -->
+      @defer (when showDrawingModal()) {
+        @if (showDrawingModal()) {
+          <div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+             <div class="bg-white rounded-2xl shadow-2xl w-full h-full md:w-auto md:h-auto md:max-w-5xl flex flex-col overflow-hidden">
+                <div class="flex justify-between items-center p-4 border-b border-gray-100 flex-shrink-0">
+                   <h3 class="font-bold text-lg">스케치</h3>
+                   <div class="flex gap-2">
+                      <button (click)="showDrawingModal.set(false)" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm font-bold active:scale-95">취소</button>
+                      <button (click)="saveDrawing()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 active:scale-95">저장</button>
+                   </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row h-full overflow-hidden">
+                  <!-- Palette -->
+                  <div class="bg-gray-50 p-4 border-r border-gray-200 md:w-48 space-y-6 flex flex-row md:flex-col overflow-x-auto md:overflow-visible flex-shrink-0">
+                     <div>
+                        <label class="text-xs font-bold text-gray-400 block mb-2">COLOR</label>
+                        <div class="grid grid-cols-8 md:grid-cols-4 gap-2">
+                           @for (color of palette; track color) {
+                             <button 
+                               (click)="setDrawColor(color)" 
+                               class="w-8 h-8 rounded-lg shadow-sm border border-black/10 transition-transform hover:scale-110 flex-shrink-0"
+                               [style.background-color]="color"
+                               [class.ring-2]="drawColor === color"
+                               [class.ring-offset-1]="drawColor === color"
+                               [class.ring-indigo-500]="drawColor === color"
+                             ></button>
+                           }
+                        </div>
+                     </div>
+                     
+                     <div class="hidden md:block">
+                        <label class="text-xs font-bold text-gray-400 block mb-2">SIZE: {{ lineWidth }}px</label>
+                        <input type="range" min="1" max="20" [(ngModel)]="lineWidth" (change)="updateLineWidth()" class="w-full accent-indigo-600 h-2 bg-gray-200 rounded-full appearance-none">
+                     </div>
+
+                     <button (click)="clearDrawing()" class="w-full py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold text-red-500 hover:bg-red-50 hidden md:block active:scale-95">초기화</button>
+                  </div>
+
+                  <div class="flex-1 bg-gray-200 overflow-hidden flex items-center justify-center p-4 touch-none">
+                     <canvas 
+                      #drawingCanvas 
+                      width="800" 
+                      height="600" 
+                      class="bg-white shadow-lg cursor-crosshair touch-none rounded-lg max-w-full h-auto object-contain"
+                      (mousedown)="startDrawing($event)"
+                      (mousemove)="draw($event)"
+                      (mouseup)="stopDrawing()"
+                      (mouseleave)="stopDrawing()"
+                      (touchstart)="startDrawingTouch($event)"
+                      (touchmove)="drawTouch($event)"
+                      (touchend)="stopDrawing()"
+                    ></canvas>
+                  </div>
+                </div>
+             </div>
+          </div>
+        }
       }
     </div>
   `,
   styles: [`
     .font-handwriting { font-family: cursive; }
+    .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* Ensure bottom safe area for iPhone X+ */
+    .safe-area-pb {
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+    
+    .touch-pan-x {
+      touch-action: pan-x;
+    }
   `]
 })
 export class CapsuleDetailComponent implements OnInit, OnDestroy {
@@ -534,7 +597,9 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
   items = signal<CapsuleItem[]>([]);
   timeLeft = signal<string>('00:00:00');
   
-  // Expiration State
+  // Access Control & Expiration State
+  isLocked = signal(false);
+  lockError = signal(false);
   isReadOnly = signal(false);
   showExpirationModal = signal(false);
   expirationDate: Date | null = null;
@@ -590,10 +655,14 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
   lineWidth = 4;
   palette = ['#111827', '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899'];
   
+  // Snapshot
+  isCapturing = false;
+  
   @ViewChild('drawingCanvas') drawingCanvas!: ElementRef<HTMLCanvasElement>;
   private ctx!: CanvasRenderingContext2D;
 
   @ViewChild('canvasContainer') canvasContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('captureArea') captureArea!: ElementRef<HTMLDivElement>;
   @ViewChild('chatInput') chatInput!: ElementRef<HTMLInputElement>;
   
   private timerSub?: Subscription;
@@ -639,7 +708,7 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
         // Canvas is 2000x2000
         this.panX.set((w - 2000) / 2);
         this.panY.set((h - 2000) / 2);
-        this.zoomScale.set(1);
+        this.zoomScale.set(Math.min(1, w / 1000)); // Scale down initially on small screens
      }
   }
 
@@ -647,29 +716,62 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
     const c = this.capsuleService.getCapsule(id);
     if (c) {
       this.capsule.set(c);
-      this.items.set(c.items);
-      this.expirationDate = this.capsuleService.getExpirationDate(c);
       
-      // Check for expiration
-      if (this.capsuleService.isExpired(c)) {
-         this.setReadOnlyMode();
-      } else {
-         this.isReadOnly.set(false);
-         this.startTimer(c);
-      }
-      
+      // Password Protection Check
       const user = this.currentUser();
-      const userId = user?.id || 'guest_' + Math.floor(Math.random() * 10000);
-      this.collabService.init(userId, c.id);
+      const isCreator = user && user.id === c.creatorId;
+      
+      // If capsule has password and user is not creator, LOCK IT
+      if (c.password && !isCreator) {
+         this.isLocked.set(true);
+      } else {
+         this.initializeCapsuleContent(c);
+      }
     }
+  }
+
+  unlock(password: string) {
+     const c = this.capsule();
+     if (!c) return;
+     
+     if (password === c.password) {
+        this.isLocked.set(false);
+        this.lockError.set(false);
+        this.initializeCapsuleContent(c);
+     } else {
+        this.lockError.set(true);
+     }
+  }
+
+  initializeCapsuleContent(c: Capsule) {
+    this.items.set(c.items);
+    this.expirationDate = this.capsuleService.getExpirationDate(c);
+    
+    // Check for expiration
+    if (this.capsuleService.isExpired(c)) {
+       this.setReadOnlyMode();
+    } else {
+       this.isReadOnly.set(false);
+       this.startTimer(c);
+    }
+    
+    const user = this.currentUser();
+    const userId = user?.id || 'guest_' + Math.floor(Math.random() * 10000);
+    this.collabService.init(userId, c.id);
   }
 
   setReadOnlyMode() {
     this.isReadOnly.set(true);
     this.timeLeft.set('EXPIRED');
-    setTimeout(() => {
-       this.showExpirationModal.set(true);
-    }, 500);
+    
+    if (this.capsule()?.archivedDate) {
+       this.showExpirationModal.set(false);
+       this.timeLeft.set('ARCHIVED');
+    } else {
+       setTimeout(() => {
+          this.showExpirationModal.set(true);
+       }, 500);
+    }
   }
 
   startTimer(capsule: Capsule) {
@@ -698,15 +800,41 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  resetCapsule() {
+  async downloadSnapshot() {
+     this.isCapturing = true; // Hides cursors
+     
+     // Need to wait for angular change detection if we used *ngIf
+     setTimeout(() => {
+        if (typeof html2canvas !== 'undefined' && this.captureArea) {
+           html2canvas(this.captureArea.nativeElement, {
+              scale: 2, // Better quality
+              useCORS: true,
+              logging: false,
+              backgroundColor: '#ffffff'
+           }).then((canvas: HTMLCanvasElement) => {
+              const link = document.createElement('a');
+              link.download = `time_capsuffle_${this.capsule()?.name || 'memory'}.png`;
+              link.href = canvas.toDataURL('image/png');
+              link.click();
+              
+              this.isCapturing = false;
+           }).catch((err: any) => {
+              console.error(err);
+              alert('스크린샷 저장 중 오류가 발생했습니다.');
+              this.isCapturing = false;
+           });
+        }
+     }, 100);
+  }
+
+  archiveAndResetCapsule() {
      const c = this.capsule();
      if (c) {
-        this.capsuleService.resetCapsule(c.id);
+        this.capsuleService.archiveAndResetCapsule(c.id);
         this.collabService.broadcastCapsuleReset();
         
-        // Local update
-        this.loadCapsule(c.id);
         this.showExpirationModal.set(false);
+        this.router.navigate(['/home']);
      }
   }
 
@@ -767,16 +895,11 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
   onWheel(event: WheelEvent) {
      event.preventDefault();
      
-     // Check for pinch-zoom on trackpad or Ctrl+Wheel
      if (event.ctrlKey || Math.abs(event.deltaY) < 10) { 
-        // Likely a zoom gesture
-        const delta = -event.deltaY * 0.005; // Sensitive factor
+        // Pinch zoom trackpad
+        const delta = -event.deltaY * 0.005;
         const scale = this.zoomScale();
         const newScale = Math.min(Math.max(0.2, scale + delta), 4);
-        
-        // Zoom towards mouse pointer logic would go here, 
-        // but simple center zoom is safer for this complexity level.
-        // Let's stick to simple zoom or center zoom for stability.
         this.zoomScale.set(newScale);
      } else {
         // Pan
@@ -788,12 +911,6 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
   // --- Coordinate Helper ---
   
   getCanvasPoint(clientX: number, clientY: number) {
-     // Convert screen coordinate to canvas coordinate (0-2000 space)
-     // Formula: (ScreenPos - PanOffset) / Scale
-     // Note: PanOffset is the visual translation.
-     
-     // We need to account for container offset if it's not full screen (it is mostly)
-     // But strictly:
      const rect = this.canvasContainer.nativeElement.getBoundingClientRect();
      const relX = clientX - rect.left;
      const relY = clientY - rect.top;
@@ -807,13 +924,15 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
   // --- Interaction (Pan, Zoom, Drag) ---
 
   onMouseDown(event: MouseEvent) {
-     if (this.isDragging()) return; // Item drag handled separately
+     if (this.isLocked() || this.isDragging()) return; 
      
      this.isPanning = true;
      this.lastMousePos = { x: event.clientX, y: event.clientY };
   }
   
   onMouseMove(event: MouseEvent) {
+    if (this.isLocked()) return;
+    
     if (this.isPanning) {
        event.preventDefault();
        const dx = event.clientX - this.lastMousePos.x;
@@ -832,6 +951,8 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
   }
 
   onTouchStart(event: TouchEvent) {
+    if (this.isLocked()) return;
+
     if (event.touches.length === 2) {
        this.isPinching = true;
        this.lastTouchDistance = this.getTouchDistance(event.touches);
@@ -847,18 +968,15 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
   }
 
   onTouchMove(event: TouchEvent) {
-    event.preventDefault(); // Prevent browser scroll
+    if (this.isLocked()) return;
+    if (event.cancelable) event.preventDefault(); // Critical: Prevent browser scrolling
     
     if (this.isPinching && event.touches.length === 2) {
-       // Handle Pinch Zoom
        const dist = this.getTouchDistance(event.touches);
        const delta = dist - this.lastTouchDistance;
-       
-       // Sensitivity
        const zoomDelta = delta * 0.005; 
        const newScale = Math.min(Math.max(0.2, this.zoomScale() + zoomDelta), 4);
        this.zoomScale.set(newScale);
-       
        this.lastTouchDistance = dist;
        return;
     }
@@ -875,7 +993,6 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Cursor Broadcast & Item Drag (One finger)
     if (event.touches.length === 1) {
        const touch = event.touches[0];
        const pt = this.getCanvasPoint(touch.clientX, touch.clientY);
@@ -892,9 +1009,8 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
   }
 
   handleCursorAndItemDrag(x: number, y: number) {
-    // Throttle cursor broadcast
     const now = Date.now();
-    if (now - this.lastCursorUpdate > 50) { // 20fps
+    if (now - this.lastCursorUpdate > 50) { 
        const user = this.currentUser();
        this.collabService.broadcastCursor(x, y, user?.name || 'Guest', user?.avatarColor || '#6B7280');
        this.lastCursorUpdate = now;
@@ -902,19 +1018,13 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
 
     if (this.isDragging() && this.draggedItem() && !this.isReadOnly()) {
        const item = this.draggedItem()!;
-       // Important: dragOffset was calculated in screen coordinates? No, let's fix drag start first.
        
-       // Calculate new item position
-       // The mouse is at 'x, y' (Canvas Coords).
-       // The item should be at mouse - offset.
        let newX = x - this.dragOffset.x;
        let newY = y - this.dragOffset.y;
        
-       // Clamp
        newX = Math.max(0, Math.min(newX, 2000 - item.width));
        newY = Math.max(0, Math.min(newY, 2000 - (item.height || 100)));
        
-       // Update logic
        this.items.update(items => items.map(i => i.id === item.id ? { ...i, x: newX, y: newY } : i));
     }
   }
@@ -935,11 +1045,10 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
   }
 
   startDrag(event: MouseEvent, item: CapsuleItem) {
-    if (this.isReadOnly()) return;
+    if (this.isReadOnly() || this.isLocked()) return;
     event.stopPropagation();
     event.preventDefault();
     
-    // We need to calculate the offset in Canvas Coordinates
     const pt = this.getCanvasPoint(event.clientX, event.clientY);
     
     this.isDragging.set(true);
@@ -952,8 +1061,9 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
   }
 
   startDragTouch(event: TouchEvent, item: CapsuleItem) {
-    if (this.isReadOnly()) return;
+    if (this.isReadOnly() || this.isLocked()) return;
     event.stopPropagation();
+    if (event.cancelable) event.preventDefault();
     
     const touch = event.touches[0];
     const pt = this.getCanvasPoint(touch.clientX, touch.clientY);
@@ -968,7 +1078,7 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
   }
 
   onDrop(event: DragEvent) {
-    if (this.isReadOnly()) return;
+    if (this.isReadOnly() || this.isLocked()) return;
     event.preventDefault();
     if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
       const file = event.dataTransfer.files[0];
@@ -984,8 +1094,6 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
       }
     }
   }
-
-  // --- Adding Items ---
 
   openMediaModal(type: 'image' | 'video' | 'audio' | 'gif') {
     if (this.isReadOnly()) return;
@@ -1003,14 +1111,10 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
      this.lastGifQuery = q;
      this.showGifFallback.set(false);
      
-     // Use GifService
      const results = await this.gifService.searchGifs(q);
      
      if (results.length > 0) {
         this.gifResults.set(results);
-        if (q && results.length < 5) { // If very few results, maybe it was a fallback? 
-           // Optional logic here
-        }
      } else {
         this.showGifFallback.set(true);
      }
@@ -1079,8 +1183,6 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
       const type = typeOverride || this.mediaType(); 
       let w = 300, h = 300;
       if (type === 'audio') { w = 300; h = 100; }
-      
-      // If it's a GIF or type override, treat it specially or just as 'gif' type item
       this.addItem(type as any, url, w, h);
       this.showMediaModal.set(false);
     }
@@ -1104,9 +1206,7 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
         else type = 'image';
 
         if (this.mediaType() !== 'audio' && type === 'audio') {
-           // mismatched type, but allow it
         } else if (this.mediaType() === 'audio' && type !== 'audio') {
-           // strict check for audio tab
            return; 
         }
         
@@ -1135,13 +1235,10 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
     const user = this.currentUser();
     if (!c) return;
     
-    // Add to center of view
-    // View Center (Screen) is w/2, h/2
     const rect = this.canvasContainer.nativeElement.getBoundingClientRect();
     const cx = rect.width / 2;
     const cy = rect.height / 2;
     
-    // Convert to canvas coords
     const pt = this.getCanvasPoint(rect.left + cx, rect.top + cy);
 
     const x = pt.x - (w / 2);
@@ -1163,8 +1260,6 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
     this.items.update(prev => [...prev, newItem]);
     this.collabService.broadcastItemAdd(newItem);
   }
-
-  // --- Drawing Logic ---
 
   openDrawingModal() {
     if (this.isReadOnly()) return;

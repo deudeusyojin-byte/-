@@ -12,8 +12,8 @@ import { Router } from '@angular/router';
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100 animate-fade-in">
         <div class="bg-indigo-600 p-6">
-          <h2 class="text-2xl font-bold text-white">새 캡슐 만들기</h2>
-          <p class="text-indigo-100 mt-1">추억을 담을 새로운 공간을 만드세요.</p>
+          <h2 class="text-2xl font-bold text-white">공동 캡슐 만들기</h2>
+          <p class="text-indigo-100 mt-1">친구들과 공유할 비밀 캡슐을 생성합니다.</p>
         </div>
         
         <form [formGroup]="form" (ngSubmit)="create()" class="p-6 space-y-6">
@@ -25,6 +25,17 @@ import { Router } from '@angular/router';
               class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
               placeholder="예: 우리들의 2024 여름"
             >
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">입장 비밀번호</label>
+            <input 
+              type="password" 
+              formControlName="password"
+              class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition font-mono"
+              placeholder="친구들에게 공유할 비밀번호"
+            >
+            <p class="text-xs text-gray-500 mt-1">* 캡슐 생성자(본인)는 비밀번호 없이 입장 가능합니다.</p>
           </div>
 
           <div>
@@ -73,13 +84,14 @@ import { Router } from '@angular/router';
 export class CreateCapsuleModalComponent {
   close = output<void>();
   
-  fb = inject(FormBuilder);
+  private fb: FormBuilder = inject(FormBuilder);
   capsuleService = inject(CapsuleService);
   authService = inject(AuthService);
   router = inject(Router);
 
   form = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
+    password: ['', [Validators.required, Validators.minLength(3)]],
     duration: ['1w', Validators.required]
   });
 
@@ -93,11 +105,11 @@ export class CreateCapsuleModalComponent {
   create() {
     if (this.form.invalid) return;
 
-    const { name, duration } = this.form.value;
+    const { name, duration, password } = this.form.value;
     const user = this.authService.currentUser();
     
-    if (name && duration && user) {
-      const id = this.capsuleService.createCapsule(name, duration, user.id);
+    if (name && duration && user && password) {
+      const id = this.capsuleService.createCapsule(name, duration, user.id, password);
       this.close.emit();
       this.router.navigate(['/capsule', id]);
     }
