@@ -17,7 +17,7 @@ declare var html2canvas: any; // Declare for TS
   imports: [CommonModule, RouterModule, FormsModule, DatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <!-- Mobile: Use 100dvh to fix address bar jumping issues -->
+    <!-- Mobile: Use 100dvh to fix address bar resizing issues. touch-action: none prevents browser gestures. -->
     <div class="h-[100dvh] w-screen flex flex-col bg-gray-100 overflow-hidden font-sans text-gray-900 relative select-none touch-none overscroll-none">
       
       <!-- Lock Screen for Password Protection -->
@@ -97,7 +97,7 @@ declare var html2canvas: any; // Declare for TS
       </header>
       
       <!-- Zoom Controls (Bottom Left) -->
-      <div class="fixed bottom-28 md:bottom-8 left-4 z-40 flex flex-col gap-2">
+      <div class="fixed bottom-28 md:bottom-8 left-4 z-40 flex flex-col gap-2 pointer-events-auto">
          <div class="bg-white/90 backdrop-blur rounded-lg shadow-lg border border-gray-200 flex flex-col overflow-hidden">
             <button (click)="zoomIn()" class="p-3 hover:bg-gray-100 text-gray-600 border-b border-gray-100 active:bg-gray-200">
                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
@@ -122,7 +122,7 @@ declare var html2canvas: any; // Declare for TS
                 [class.text-white]="activeTool() === 'cursor'" 
                 [class.text-gray-400]="activeTool() !== 'cursor'"
                 class="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-xl transition-all active:scale-95"
-                title="이동"
+                title="이동/편집"
               >
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
               </button>
@@ -959,6 +959,7 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
        return;
     }
 
+    // Don't start panning if we are dragging an item
     if (this.isDragging()) return;
     
     // Pan
@@ -971,6 +972,7 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
     if (this.isLocked()) return;
     if (event.cancelable) event.preventDefault(); // Critical: Prevent browser scrolling
     
+    // Pinch Zoom
     if (this.isPinching && event.touches.length === 2) {
        const dist = this.getTouchDistance(event.touches);
        const delta = dist - this.lastTouchDistance;
@@ -981,7 +983,8 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
        return;
     }
 
-    if (this.isPanning && event.touches.length === 1) {
+    // Panning (Only if not pinching and not dragging an item)
+    if (this.isPanning && event.touches.length === 1 && !this.isDragging()) {
       const touch = event.touches[0];
       const dx = touch.clientX - this.lastMousePos.x;
       const dy = touch.clientY - this.lastMousePos.y;
@@ -993,6 +996,7 @@ export class CapsuleDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Cursor Broadcast (Mobile)
     if (event.touches.length === 1) {
        const touch = event.touches[0];
        const pt = this.getCanvasPoint(touch.clientX, touch.clientY);
