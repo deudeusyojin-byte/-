@@ -12,41 +12,36 @@ import { CommonModule } from '@angular/common';
       <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-4 md:gap-8">
           <a routerLink="/home" class="flex items-center gap-3 group">
-            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-mono font-bold text-xl shadow-lg transition-transform group-hover:scale-105">T</div>
-            <span class="font-bold text-xl tracking-tight text-gray-900 group-hover:text-indigo-600 transition-colors hidden sm:block">TimeCapsuffle</span>
+            <!-- Custom Graphic Logo: Capsule with Memory -->
+            <div class="relative w-10 h-10 flex items-center justify-center transition-transform group-hover:rotate-12 duration-500">
+               <!-- SVG Icon -->
+               <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-sm overflow-visible" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <!-- Capsule Body (Tilted) -->
+                  <g transform="rotate(-15 50 50)">
+                    <!-- Outer Shell -->
+                    <rect x="25" y="10" width="50" height="80" rx="25" class="stroke-stone-800" stroke-width="6" fill="white"/>
+                    <!-- Inner Shine (Reflection) -->
+                    <path d="M38 20 Q 50 20 62 25" class="stroke-stone-200" stroke-width="4" />
+                    <!-- The Memory (Photo/Paper) Floating Inside -->
+                    <rect x="35" y="45" width="30" height="35" rx="4" class="fill-indigo-500 stroke-indigo-600" stroke-width="0" transform="rotate(5 50 62.5)"/>
+                    <!-- Small detail on memory -->
+                    <circle cx="50" cy="55" r="4" fill="white" fill-opacity="0.5" transform="rotate(5 50 62.5)"/>
+                  </g>
+               </svg>
+            </div>
+            <span class="font-bold text-xl tracking-tight text-gray-900 group-hover:text-indigo-600 transition-colors hidden sm:block font-serif">TimeCapsuffle</span>
           </a>
           
           <div class="hidden md:flex gap-1">
             <a routerLink="/home" routerLinkActive="bg-gray-100 text-gray-900" [routerLinkActiveOptions]="{exact: true}" class="px-5 py-2 rounded-full text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition">홈</a>
-            <!-- Always visible Archive Link -->
-            <a routerLink="/home" fragment="my-capsules" class="px-5 py-2 rounded-full text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition cursor-pointer">보관함</a>
+            <a routerLink="/blog" routerLinkActive="bg-gray-100 text-gray-900" class="px-5 py-2 rounded-full text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition">가이드</a>
+            <a routerLink="/home" fragment="archive-section" class="px-5 py-2 rounded-full text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition cursor-pointer">보관함</a>
           </div>
         </div>
 
         <!-- Desktop Menu -->
         <div class="hidden md:flex items-center gap-5">
-          @if (authService.currentUser()) {
-            <div class="flex items-center pl-6 border-l border-gray-200 gap-4">
-              <div class="flex flex-col items-end hidden sm:flex text-right">
-                <span class="text-sm font-bold text-gray-900">{{ authService.currentUser()?.name }}</span>
-                <span class="text-[10px] text-gray-400 font-mono">@ {{ authService.currentUser()?.username }}</span>
-              </div>
-              <div 
-                class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md ring-2 ring-white"
-                [style.background-color]="authService.currentUser()?.avatarColor"
-              >
-                {{ authService.currentUser()?.name?.charAt(0) }}
-              </div>
-              <button (click)="authService.logout()" class="text-xs font-medium text-gray-400 hover:text-red-500 hover:underline underline-offset-4 transition">
-                로그아웃
-              </button>
-            </div>
-          } @else {
-             <div class="flex items-center gap-3">
-               <a routerLink="/login" class="text-sm font-medium text-gray-500 hover:text-gray-900 px-4 py-2 transition">로그인</a>
-               <a routerLink="/login" class="px-6 py-2.5 bg-indigo-600 text-white rounded-full text-sm font-bold hover:bg-indigo-700 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5">시작하기</a>
-             </div>
-          }
+           <a routerLink="/contact" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition">문의하기</a>
         </div>
 
         <!-- Mobile Menu Button -->
@@ -66,26 +61,9 @@ import { CommonModule } from '@angular/common';
         <div class="md:hidden border-t border-gray-100 bg-white absolute w-full left-0 shadow-lg animate-fade-in">
            <div class="p-4 flex flex-col gap-2">
               <a routerLink="/home" (click)="toggleMenu()" class="px-4 py-3 rounded-lg hover:bg-gray-50 font-medium text-gray-700">홈</a>
-              <a routerLink="/home" fragment="my-capsules" (click)="toggleMenu()" class="px-4 py-3 rounded-lg hover:bg-gray-50 font-medium text-gray-700">보관함</a>
-              
-              @if (authService.currentUser()) {
-                <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-100 mb-2 mt-2">
-                   <div 
-                    class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm"
-                    [style.background-color]="authService.currentUser()?.avatarColor"
-                   >
-                    {{ authService.currentUser()?.name?.charAt(0) }}
-                   </div>
-                   <div class="flex flex-col">
-                      <span class="font-bold text-gray-900">{{ authService.currentUser()?.name }}</span>
-                      <span class="text-xs text-gray-400">@ {{ authService.currentUser()?.username }}</span>
-                   </div>
-                </div>
-                <button (click)="authService.logout()" class="text-left px-4 py-3 rounded-lg hover:bg-red-50 text-red-600 font-medium">로그아웃</button>
-              } @else {
-                <a routerLink="/login" (click)="toggleMenu()" class="px-4 py-3 rounded-lg hover:bg-gray-50 font-medium text-gray-700">로그인</a>
-                <a routerLink="/login" (click)="toggleMenu()" class="px-4 py-3 rounded-lg bg-indigo-600 text-white font-bold text-center">시작하기</a>
-              }
+              <a routerLink="/blog" (click)="toggleMenu()" class="px-4 py-3 rounded-lg hover:bg-gray-50 font-medium text-gray-700">이용 가이드</a>
+              <a routerLink="/about" (click)="toggleMenu()" class="px-4 py-3 rounded-lg hover:bg-gray-50 font-medium text-gray-700">소개</a>
+              <a routerLink="/home" fragment="archive-section" (click)="toggleMenu()" class="px-4 py-3 rounded-lg hover:bg-gray-50 font-medium text-gray-700">보관함</a>
            </div>
         </div>
       }

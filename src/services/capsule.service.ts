@@ -1,15 +1,25 @@
 import { Injectable, signal } from '@angular/core';
 
+export interface CharacterData {
+  vx: number; // Velocity X
+  vy: number; // Velocity Y
+  state: 'idle' | 'run' | 'jump';
+  direction: 'left' | 'right';
+  color: string; // Character tint or indicator color
+  playerId: string; // To identify who controls this
+}
+
 export interface CapsuleItem {
   id: string;
-  type: 'text' | 'image' | 'video' | 'audio' | 'drawing' | 'gif';
-  content: string; // URL or Base64
+  type: 'text' | 'image' | 'video' | 'audio' | 'drawing' | 'gif' | 'character' | 'sticker';
+  content: string; // URL or Base64 (For character, this is the sprite sheet URL)
   x: number;
   y: number;
   width: number;
   height: number;
   zIndex: number;
   authorId: string;
+  characterData?: CharacterData; // Only for type='character'
 }
 
 export interface Capsule {

@@ -85,9 +85,9 @@ export class CreateCapsuleModalComponent {
   close = output<void>();
   
   private fb: FormBuilder = inject(FormBuilder);
-  capsuleService = inject(CapsuleService);
-  authService = inject(AuthService);
-  router = inject(Router);
+  capsuleService: CapsuleService = inject(CapsuleService);
+  authService: AuthService = inject(AuthService);
+  router: Router = inject(Router);
 
   form = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],

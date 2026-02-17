@@ -13,12 +13,26 @@ import { CommonModule } from '@angular/common';
       <div class="bg-white border border-stone-200 shadow-xl w-full max-w-5xl overflow-hidden flex flex-col md:flex-row h-[600px] rounded-2xl">
         
         <!-- Decoration Left Side -->
-        <div class="hidden md:flex w-1/2 bg-stone-900 p-12 flex-col justify-between relative overflow-hidden">
+        <div class="hidden md:flex w-1/2 bg-stone-900 p-12 flex-col justify-between relative overflow-hidden group">
           <div class="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
           
           <div class="relative z-10">
-             <div class="w-12 h-12 border-2 border-stone-500 rounded-lg mb-8 flex items-center justify-center text-stone-300 font-serif italic text-2xl">T</div>
-             <h2 class="text-5xl font-serif text-white mb-6 leading-tight font-bold">Time<br><span class="italic text-stone-400">Capsuffle</span></h2>
+             <!-- New Custom Vector Logo -->
+             <div class="w-24 h-24 mb-6 transition-transform duration-700 group-hover:rotate-6">
+                <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-lg overflow-visible" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <g transform="rotate(-15 50 50)">
+                    <!-- Outer Shell (White on Dark) -->
+                    <rect x="25" y="10" width="50" height="80" rx="25" class="stroke-white" stroke-width="4" fill="transparent"/>
+                    <!-- Inner Shine -->
+                    <path d="M38 20 Q 50 20 62 25" class="stroke-stone-500" stroke-width="3" />
+                    <!-- The Memory (Pink Photo) -->
+                    <rect x="35" y="45" width="30" height="35" rx="4" class="fill-pink-500 stroke-pink-400" stroke-width="0" transform="rotate(5 50 62.5)"/>
+                    <circle cx="50" cy="55" r="4" fill="white" fill-opacity="0.8" transform="rotate(5 50 62.5)"/>
+                  </g>
+               </svg>
+             </div>
+             
+             <h2 class="text-5xl font-serif text-white mb-6 leading-tight font-bold">Time<br><span class="italic text-indigo-400">Capsuffle</span></h2>
              <p class="text-stone-400 text-lg leading-relaxed font-light">
                소중한 기억을 보관하는<br>가장 아름다운 방법.
              </p>
@@ -33,7 +47,8 @@ import { CommonModule } from '@angular/common';
              </div>
           </div>
           
-          <div class="absolute -bottom-24 -right-24 w-80 h-80 bg-stone-800 rounded-full blur-3xl opacity-40 mix-blend-screen"></div>
+          <!-- Subtle Glow -->
+          <div class="absolute -bottom-24 -right-24 w-80 h-80 bg-indigo-900 rounded-full blur-3xl opacity-30 mix-blend-screen"></div>
         </div>
 
         <!-- Form Right Side -->
@@ -109,8 +124,8 @@ import { CommonModule } from '@angular/common';
 })
 export class LoginComponent {
   private fb: FormBuilder = inject(FormBuilder);
-  authService = inject(AuthService);
-  router = inject(Router);
+  authService: AuthService = inject(AuthService);
+  router: Router = inject(Router);
   
   isLogin = signal(true);
   isSubmitting = signal(false);

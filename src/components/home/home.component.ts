@@ -3,28 +3,33 @@ import { NavBarComponent } from '../nav-bar/nav-bar.component';
 import { CreateCapsuleModalComponent } from '../create-capsule-modal/create-capsule-modal.component';
 import { CapsuleService, Capsule } from '../../services/capsule.service';
 import { AuthService } from '../../services/auth.service';
+import { BlogService } from '../../services/blog.service';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { DatePipe, CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, NavBarComponent, CreateCapsuleModalComponent, RouterModule, DatePipe],
+  imports: [CommonModule, NavBarComponent, CreateCapsuleModalComponent, RouterModule, DatePipe, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <!-- Mobile: Use 100dvh for consistent viewport height -->
     <div class="h-[100dvh] overflow-y-auto bg-gray-50 custom-scrollbar selection:bg-indigo-500 selection:text-white scroll-smooth">
       <app-nav-bar></app-nav-bar>
       
-      <!-- Hero Section (Restored to Original Rich Design) -->
+      <!-- Hero Section -->
       <div class="relative w-full min-h-[90vh] flex flex-col justify-center items-center overflow-hidden border-b border-gray-200 bg-white">
          <div class="absolute inset-0 bg-[linear-gradient(to_right,#e5e7eb_1px,transparent_1px),linear-gradient(to_bottom,#e5e7eb_1px,transparent_1px)] bg-[size:40px_40px] opacity-60"></div>
 
          <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <!-- Floating Polaroid -->
+            <!-- Floating Polaroid (CSS Only - Copyright Safe) -->
             <div class="absolute top-12 left-4 md:top-20 md:left-16 w-48 md:w-56 bg-white p-3 shadow-xl transform -rotate-12 border border-gray-200 animate-float-slow transition-all duration-500 hidden md:block">
-               <div class="h-32 md:h-40 bg-gray-200 mb-3 overflow-hidden">
-                  <img src="https://picsum.photos/id/1015/300/300" class="w-full h-full object-cover grayscale opacity-80" loading="lazy">
+               <!-- Copyright-free Image Replacement: Highly Reliable Beach Image -->
+               <div class="h-32 md:h-40 bg-gray-100 mb-3 overflow-hidden relative">
+                  <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover transform hover:scale-110 transition-transform duration-700 ease-out" alt="Summer Beach Memory">
+                  <!-- Subtle filter overlay -->
+                  <div class="absolute inset-0 bg-indigo-500/10 mix-blend-overlay"></div>
                </div>
                <div class="font-handwriting text-center text-gray-500 font-bold text-sm">2024 Summer</div>
             </div>
@@ -34,7 +39,7 @@ import { DatePipe, CommonModule } from '@angular/common';
                "시간은 흐르지 않고, 우리가 지나가는 것이다."
             </div>
 
-            <!-- Floating Music Player (Restored) -->
+            <!-- Floating Music Player (Bottom Left) -->
             <div class="absolute bottom-10 -left-10 md:bottom-20 md:left-10 w-56 md:w-64 bg-black rounded-lg shadow-2xl transform rotate-3 p-1 border-2 border-gray-800 animate-float transition-all duration-500 opacity-90 hidden md:block">
                <div class="aspect-video bg-gray-900 flex items-center justify-center relative">
                   <div class="w-12 h-12 rounded-full border-2 border-white flex items-center justify-center">
@@ -46,22 +51,30 @@ import { DatePipe, CommonModule } from '@angular/common';
                </div>
             </div>
 
-            <!-- Floating Squiggle (Restored) -->
-            <div class="absolute bottom-16 -right-5 md:bottom-24 md:right-24 opacity-40 transform -rotate-12 transition-all duration-500 hidden md:block">
-               <svg width="200" height="100" viewBox="0 0 200 100" fill="none" stroke="#6366f1" stroke-width="3" stroke-linecap="round">
-                  <path d="M10,50 Q50,10 90,50 T180,50" />
-                  <path d="M20,60 Q60,90 100,40" stroke="#ec4899" />
-               </svg>
-            </div>
-            
-            <!-- Collaborative Cursors (Visual) -->
-            <div class="absolute top-[35%] left-[20%] animate-pulse hidden md:block">
-               <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#EF4444" stroke="white" stroke-width="2"/></svg>
-               <span class="ml-4 bg-red-500 text-white text-xs px-2 py-0.5 rounded shadow-sm">Jimin</span>
-            </div>
-            <div class="absolute bottom-[40%] right-[15%] animate-pulse delay-700 hidden md:block">
-               <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#3B82F6" stroke="white" stroke-width="2"/></svg>
-               <span class="ml-4 bg-blue-500 text-white text-xs px-2 py-0.5 rounded shadow-sm">Min-su</span>
+            <!-- Floating Voice UI (Bottom Right - Position Adjusted Further Down) -->
+            <div class="absolute bottom-16 -right-10 md:bottom-6 md:right-20 w-60 md:w-72 bg-white rounded-2xl shadow-xl transform rotate-6 p-4 border border-gray-100 animate-float-delayed transition-all duration-500 hidden md:block">
+               <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
+                  <div class="flex items-center gap-2">
+                     <div class="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></div>
+                     <span class="text-xs font-bold text-gray-400 font-mono">REC 00:04:21</span>
+                  </div>
+                  <div class="text-xs font-bold text-indigo-500">Voice Note</div>
+               </div>
+               
+               <!-- Waveform Animation -->
+               <div class="flex items-center justify-center gap-1 h-12">
+                  @for (h of [40, 70, 50, 100, 60, 80, 40, 90, 50]; track $index) {
+                     <div 
+                        class="w-1.5 bg-indigo-500 rounded-full animate-wave"
+                        [style.height.%]="h"
+                        [style.animation-delay]="$index * 0.1 + 's'"
+                     ></div>
+                  }
+               </div>
+               
+               <div class="mt-3 text-center">
+                  <p class="text-xs text-gray-400 font-medium">"그때 우리 정말 즐거웠지..."</p>
+               </div>
             </div>
          </div>
 
@@ -84,23 +97,13 @@ import { DatePipe, CommonModule } from '@angular/common';
                사진, 동영상, 낙서가 모여 하나의 타임캡슐이 됩니다.
             </p>
 
-            <div class="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in delay-200">
+            <div class="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in delay-200 flex-wrap">
                <button (click)="scrollToCapsules()" class="px-10 py-4 bg-gray-900 text-white rounded-full font-bold text-lg hover:bg-black transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 flex items-center justify-center gap-3">
                   <span>시작하기</span>
                   <span class="bg-white/20 rounded-full p-1">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                   </span>
                </button>
-               
-               @if (authService.currentUser()) {
-                 <button (click)="handleCreateCapsule()" class="px-10 py-4 bg-white border border-gray-200 text-gray-700 rounded-full font-bold text-lg hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm backdrop-blur-sm bg-opacity-80">
-                    새 캡슐 만들기
-                 </button>
-               } @else {
-                 <button (click)="router.navigate(['/login'])" class="px-10 py-4 bg-white border border-gray-200 text-gray-700 rounded-full font-bold text-lg hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm backdrop-blur-sm bg-opacity-80">
-                    개인용 캡슐 만들기
-                 </button>
-               }
             </div>
          </div>
          
@@ -136,9 +139,9 @@ import { DatePipe, CommonModule } from '@angular/common';
       </section>
 
       <!-- Main Application Area -->
-      <main class="relative z-10 max-w-7xl mx-auto px-6 py-24 bg-gray-50 border-t border-gray-200">
-        <!-- System Capsules -->
-        <div id="capsule-section" class="mb-32 scroll-mt-24 content-visibility-auto">
+      <main class="relative z-10 max-w-7xl mx-auto bg-gray-50 border-t border-gray-200">
+        <!-- System Capsules (Increased Size) -->
+        <div id="capsule-section" class="py-24 px-6 scroll-mt-24 content-visibility-auto">
             <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
                <div>
                   <h2 class="text-3xl font-bold text-gray-900 mb-2">공개 캡슐 둘러보기</h2>
@@ -146,134 +149,80 @@ import { DatePipe, CommonModule } from '@angular/common';
                </div>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               @for (sys of systemCapsules; track sys.type) {
-                <button (click)="openSystemCapsule(sys.type)" class="group relative bg-white h-72 rounded-3xl p-8 shadow-sm border border-gray-200 hover:shadow-2xl hover:border-indigo-200 hover:-translate-y-2 transition-all duration-300 text-left overflow-hidden">
+                <button (click)="openSystemCapsule(sys.type)" class="group relative bg-white h-96 rounded-[2.5rem] p-10 shadow-sm border border-gray-200 hover:shadow-2xl hover:border-indigo-200 hover:-translate-y-2 transition-all duration-300 text-left overflow-hidden flex flex-col justify-between">
                    <!-- Decorative Background Number -->
-                   <div class="absolute -right-6 -top-6 text-9xl font-black text-gray-50 group-hover:text-indigo-50 transition-colors select-none font-mono">
+                   <div class="absolute -right-8 -top-8 text-[12rem] font-black text-gray-50 group-hover:text-indigo-50 transition-colors select-none font-mono leading-none">
                       {{ sys.num }}
                    </div>
 
-                   <div class="relative z-10 h-full flex flex-col justify-between">
-                      <div>
-                         <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-600 text-[11px] font-bold rounded-full mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                            <span class="w-1.5 h-1.5 rounded-full bg-gray-400 group-hover:bg-white"></span>
-                            {{ sys.unit }}
-                         </div>
-                         <h3 class="text-2xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
-                           {{ sys.num }}{{ sys.unitLabel }}
-                         </h3>
-                         <p class="text-gray-500 text-sm mt-3 leading-relaxed break-keep">{{ sys.desc }}</p>
-                      </div>
+                   <div class="relative z-10">
+                       <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-full mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                          <span class="w-2 h-2 rounded-full bg-gray-400 group-hover:bg-white"></span>
+                          {{ sys.unit }}
+                       </div>
+                       <h3 class="text-3xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors tracking-tight">
+                         {{ sys.num }}{{ sys.unitLabel }}
+                       </h3>
+                       <p class="text-gray-500 text-base mt-4 leading-relaxed break-keep">{{ sys.desc }}</p>
+                   </div>
                       
-                      <div class="flex items-center text-sm font-bold text-gray-400 group-hover:text-indigo-600 transition-colors mt-auto">
-                         <span>입장하기</span> 
-                         <svg class="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-                      </div>
+                   <div class="relative z-10 flex items-center text-lg font-bold text-gray-400 group-hover:text-indigo-600 transition-colors">
+                      <span>입장하기</span> 
+                      <svg class="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                    </div>
                 </button>
               }
             </div>
         </div>
 
-        <!-- My Capsules (Active) -->
-        <div id="my-capsules" class="mb-32 scroll-mt-24 content-visibility-auto">
+        <!-- My Capsules / Private Capsules - UNDER CONSTRUCTION -->
+        <div id="my-capsules" class="py-12 px-6 scroll-mt-24 content-visibility-auto">
           <div class="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
              <div>
                 <h2 class="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
                   공동 캡슐
-                  <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-bold">LIVE</span>
+                  <span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full font-bold">WIP</span>
                 </h2>
                 <p class="text-gray-500 text-sm">친구들과 함께 만들고 있는 타임캡슐입니다.</p>
              </div>
-             @if (authService.currentUser() || capsules().length > 0) {
-                <button (click)="handleCreateCapsule()" class="hidden md:flex items-center gap-2 px-6 py-3 bg-indigo-50 text-indigo-700 rounded-xl font-bold hover:bg-indigo-100 transition-colors">
-                   <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                   <span>새 캡슐 만들기</span>
-                </button>
-             }
           </div>
 
-          <!-- Logic: Show capsules if they exist (even if not logged in). Only show login banner if NO capsules AND not logged in. -->
-          @if (capsules().length > 0) {
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade-in">
-              @for (capsule of capsules(); track capsule.id) {
-                <a [routerLink]="['/capsule', capsule.id]" class="block bg-white rounded-3xl border border-gray-200 overflow-hidden hover:shadow-2xl hover:border-indigo-300 transition-all duration-300 group transform hover:-translate-y-1">
-                   <div class="h-40 bg-slate-50 relative p-6 flex flex-col justify-between group-hover:bg-gradient-to-br group-hover:from-indigo-50 group-hover:to-white transition-colors">
-                      <div class="absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:20px_20px] opacity-40"></div>
-                      
-                      <div class="relative z-10 flex justify-between items-start">
-                         <span class="bg-white/80 backdrop-blur border border-gray-200 px-3 py-1 rounded-full text-xs font-bold text-gray-500 shadow-sm">
-                            ⏳ {{ getDurationLabel(capsule.duration) }}
-                         </span>
-                         @if (capsule.password) {
-                            <span class="bg-stone-800 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm flex items-center gap-1">
-                               🔒 Private
-                            </span>
-                         } @else {
-                            <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
-                               🔓 Public
-                            </span>
-                         }
-                      </div>
-                      <h3 class="relative z-10 text-xl font-bold text-gray-900 truncate mt-2 group-hover:text-indigo-700 transition-colors">{{ capsule.name }}</h3>
-                   </div>
-                   
-                   <div class="p-6">
-                      <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
-                         <span class="font-mono text-xs">Created: {{ capsule.createdDate | date:'yyyy.MM.dd' }}</span>
-                         <div class="flex -space-x-2">
-                            <div class="w-6 h-6 rounded-full bg-gray-200 border-2 border-white"></div>
-                            <div class="w-6 h-6 rounded-full bg-gray-300 border-2 border-white"></div>
-                            <div class="w-6 h-6 rounded-full bg-indigo-400 border-2 border-white text-[8px] text-white flex items-center justify-center font-bold">+</div>
-                         </div>
-                      </div>
-                      <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                         <div class="bg-indigo-500 h-full rounded-full w-2/3 animate-pulse"></div>
-                      </div>
-                      <div class="mt-2 text-right text-xs text-indigo-600 font-bold">진행 중...</div>
-                   </div>
-                </a>
-              }
-            </div>
-            
-            @if (authService.currentUser() || capsules().length > 0) {
-               <button (click)="handleCreateCapsule()" class="md:hidden w-full mt-6 py-4 bg-indigo-50 text-indigo-700 rounded-xl font-bold hover:bg-indigo-100 transition-colors border border-indigo-200 border-dashed">
-                  + 새 캡슐 만들기
-               </button>
-            }
-          } @else if (!authService.currentUser()) {
-            <!-- Login Prompt Banner (Only when no data + no login) -->
-            <div class="bg-stone-900 rounded-[2rem] p-10 md:p-16 text-center text-white relative overflow-hidden shadow-2xl">
-               <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-               <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-600 rounded-full blur-[100px] opacity-30"></div>
-               <div class="absolute bottom-0 left-0 w-64 h-64 bg-pink-600 rounded-full blur-[100px] opacity-20"></div>
+          <!-- Construction UI -->
+          <div class="relative overflow-hidden bg-stone-900 rounded-[2.5rem] h-80 flex flex-col items-center justify-center shadow-2xl group border-4 border-yellow-400 cursor-not-allowed select-none">
+             <!-- Caution Tapes Background -->
+             <div class="absolute inset-0 bg-stone-900">
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-16 bg-yellow-400 rotate-12 flex items-center justify-center border-y-4 border-black opacity-90 shadow-lg z-0">
+                    <div class="flex gap-8 font-black text-2xl tracking-widest text-black whitespace-nowrap overflow-hidden">
+                       @for (i of [1,2,3,4,5,6]; track i) {
+                          <span>KEEP OUT • DEVELOPMENT AREA • KEEP OUT •</span>
+                       }
+                    </div>
+                </div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-16 bg-yellow-400 -rotate-12 flex items-center justify-center border-y-4 border-black opacity-90 shadow-lg z-0">
+                    <div class="flex gap-8 font-black text-2xl tracking-widest text-black whitespace-nowrap overflow-hidden">
+                       @for (i of [1,2,3,4,5,6]; track i) {
+                          <span>UNDER CONSTRUCTION • DO NOT ENTER •</span>
+                       }
+                    </div>
+                </div>
+             </div>
 
-               <div class="relative z-10 max-w-2xl mx-auto">
-                 <h3 class="text-3xl md:text-4xl font-bold mb-6 break-keep">아직 캡슐이 없습니다.</h3>
-                 <p class="text-stone-300 mb-10 text-lg leading-relaxed break-keep">
-                   나만의 비밀 캡슐을 만들거나 친구들을 초대하세요.<br>
-                   계정을 생성하면 모든 기록이 안전하게 암호화되어 보관됩니다.
+             <!-- Warning Icon & Text -->
+             <div class="relative z-10 bg-black/80 backdrop-blur-sm p-8 rounded-3xl border border-stone-700 text-center max-w-lg mx-4">
+                 <div class="text-6xl mb-4 animate-bounce">🚧</div>
+                 <h3 class="text-3xl font-black text-white mb-2 tracking-tight">개발 중입니다</h3>
+                 <p class="text-stone-400 text-lg leading-relaxed break-keep">
+                    개인 캡슐 생성 기능은 현재 공사 중입니다.<br>
+                    위의 <strong class="text-yellow-400">공개 캡슐</strong>을 이용해 주세요!
                  </p>
-                 <button (click)="router.navigate(['/login'])" class="px-10 py-4 bg-white text-stone-900 rounded-full font-bold text-lg hover:bg-stone-200 transition shadow-xl transform hover:-translate-y-1">
-                   개인용 캡슐 만들기 (시작하기)
-                 </button>
-               </div>
-            </div>
-          } @else {
-             <!-- Logged in but no capsules -->
-             <div class="bg-white border-2 border-dashed border-gray-300 rounded-3xl p-20 text-center hover:bg-gray-50 transition-all cursor-pointer group" (click)="showModal.set(true)">
-               <div class="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform group-hover:bg-indigo-100">
-                  <svg class="w-10 h-10 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-               </div>
-               <h3 class="text-2xl font-bold text-gray-900 mb-2 break-keep">첫 번째 캡슐을 만들어보세요</h3>
-               <p class="text-gray-500 max-w-md mx-auto break-keep">특별한 날, 소중한 사람들과 함께할 공간이 필요하신가요?<br>클릭하여 시작하세요.</p>
-            </div>
-          }
+             </div>
+          </div>
         </div>
 
         <!-- Archive Section (Memories) -->
-        <div id="archive-section" class="mb-24 scroll-mt-24 content-visibility-auto">
+        <div id="archive-section" class="py-12 px-6 mb-12 scroll-mt-24 content-visibility-auto">
            <div class="mb-8">
                <h2 class="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
                   보관함
@@ -286,7 +235,7 @@ import { DatePipe, CommonModule } from '@angular/common';
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
                  @for (arc of archives(); track arc.id) {
                     <a [routerLink]="['/capsule', arc.id]" class="block bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg hover:border-gray-300 transition-all group opacity-80 hover:opacity-100">
-                       <div class="h-28 bg-gray-200 relative p-6 flex flex-col justify-center text-center">
+                       <div class="h-40 bg-gray-200 relative p-6 flex flex-col justify-center text-center">
                           <div class="absolute inset-0 bg-[linear-gradient(45deg,#00000005_25%,transparent_25%,transparent_50%,#00000005_50%,#00000005_75%,transparent_75%,transparent)] [background-size:20px_20px]"></div>
                           <div class="absolute top-3 right-3 text-2xl grayscale">🔒</div>
                           <h3 class="relative z-10 text-xl font-bold text-gray-600 group-hover:text-gray-900 transition-colors">{{ arc.name }}</h3>
@@ -309,53 +258,88 @@ import { DatePipe, CommonModule } from '@angular/common';
            }
         </div>
         
-        <!-- FAQ Section (AdSense Content Value) -->
-        <section class="mb-24 pt-16 border-t border-gray-100">
-           <div class="text-center mb-12">
-              <h2 class="text-3xl font-bold text-gray-900">자주 묻는 질문 (FAQ)</h2>
-              <p class="text-gray-500 mt-2">서비스 이용에 대해 궁금한 점을 확인하세요.</p>
-           </div>
-           
-           <div class="max-w-3xl mx-auto space-y-6">
-              <div class="bg-gray-50 rounded-2xl p-6 hover:bg-gray-100 transition-colors">
-                 <h3 class="font-bold text-gray-900 text-lg mb-2">Q. 캡슐은 언제까지 보관되나요?</h3>
-                 <p class="text-gray-600 text-sm leading-relaxed break-keep">
-                    Time Capsuffle의 모든 캡슐은 기간이 설정되어 있습니다. 24시간, 1주일, 1달, 1년 중 선택할 수 있으며,
-                    해당 기간이 지나면 '보관함(Archive)'으로 이동되어 더 이상 수정할 수 없고 열람만 가능한 영구 보존 상태가 됩니다.
-                 </p>
+        <!-- NEW: Introduction / Brand Story Section (Text Rich) -->
+        <section class="py-24 bg-white border-y border-gray-200 px-6">
+          <div class="max-w-4xl mx-auto">
+            <span class="text-indigo-600 font-bold tracking-wider uppercase text-sm mb-4 block">Brand Story</span>
+            <h2 class="text-3xl md:text-5xl font-bold text-gray-900 mb-10 font-serif leading-tight">
+              기억은 흐려지지만,<br>
+              <span class="text-gray-400">기록은 영원합니다.</span>
+            </h2>
+            <div class="prose prose-lg text-gray-600 leading-relaxed space-y-8 font-light">
+              <p>
+                우리는 너무나 빠른 속도의 시대를 살아가고 있습니다. 어제 먹은 점심 메뉴가 기억나지 않고, 
+                일주일 전 친구와 나누었던 깊은 대화도 카카오톡 스크롤 위로 밀려나 금세 잊혀지곤 합니다. 
+                <strong>Time Capsuffle</strong>은 이러한 현대의 '디지털 휘발성'에 대한 깊은 고민에서 시작되었습니다.
+              </p>
+              <div class="border-l-4 border-indigo-200 pl-6 my-8 italic text-gray-500">
+                 "왜 우리의 소중한 추억은 그저 스쳐 지나가는 데이터 조각이 되어야 할까요?"
               </div>
-              
-              <div class="bg-gray-50 rounded-2xl p-6 hover:bg-gray-100 transition-colors">
-                 <h3 class="font-bold text-gray-900 text-lg mb-2">Q. 비밀번호를 잊어버렸어요.</h3>
-                 <p class="text-gray-600 text-sm leading-relaxed break-keep">
-                    프라이빗 캡슐의 보안을 위해 비밀번호는 암호화되어 저장되므로, 운영자도 알 수 없습니다.
-                    캡슐을 생성한 '주인장(Creator)'은 비밀번호 없이 입장할 수 있으니, 생성자에게 문의하여 캡슐 정보를 확인하시거나
-                    새로운 캡슐을 생성하시기 바랍니다.
-                 </p>
-              </div>
-
-              <div class="bg-gray-50 rounded-2xl p-6 hover:bg-gray-100 transition-colors">
-                 <h3 class="font-bold text-gray-900 text-lg mb-2">Q. 친구들을 어떻게 초대하나요?</h3>
-                 <p class="text-gray-600 text-sm leading-relaxed break-keep">
-                    캡슐 생성 후 브라우저의 주소창(URL)을 복사하여 친구들에게 공유하세요.
-                    프라이빗 캡슐의 경우 설정한 비밀번호도 함께 알려주셔야 친구들이 입장할 수 있습니다.
-                    별도의 앱 설치 없이 웹에서 바로 참여 가능합니다.
-                 </p>
-              </div>
-
-               <div class="bg-gray-50 rounded-2xl p-6 hover:bg-gray-100 transition-colors">
-                 <h3 class="font-bold text-gray-900 text-lg mb-2">Q. 사진이나 동영상의 용량 제한이 있나요?</h3>
-                 <p class="text-gray-600 text-sm leading-relaxed break-keep">
-                    쾌적한 실시간 협업 환경을 위해 각 미디어 파일은 최적화되어 업로드됩니다.
-                    대용량 동영상의 경우 자동으로 압축될 수 있으며, 너무 큰 파일은 업로드가 제한될 수 있습니다.
-                    텍스트와 드로잉은 무제한으로 사용 가능합니다.
-                 </p>
-              </div>
-           </div>
+              <p>
+                우리는 기술이 인간의 기억을 대체하는 것이 아니라, 더욱 따뜻하고 감각적으로 보존하는 도구가 되어야 한다고 믿습니다. 
+                친구들과 함께 캔버스를 꾸미며 나누는 웃음, 사진 위에 덧그린 서툰 낙서, 그리고 그 순간의 공기까지. 
+                우리는 단순한 파일이 아닌 <strong>'맥락(Context)'</strong>을 저장합니다.
+              </p>
+              <p>
+                타임캡슐을 봉인하고 기다리는 시간 동안, 우리는 설렘을 느낍니다. 
+                그리고 먼 훗날 캡슐을 열었을 때, 과거의 나 자신이 보낸 따뜻한 응원을 마주하게 됩니다. 
+                이것이 우리가 정의하는 <strong>'디지털 슬로우 라이프'</strong>이며, Time Capsuffle이 존재하는 이유입니다.
+              </p>
+            </div>
+            
+            <div class="mt-12 flex gap-4">
+               <a routerLink="/about" class="text-indigo-600 font-bold hover:underline">서비스 소개 더보기 &rarr;</a>
+            </div>
+          </div>
         </section>
+
+        <!-- NEW: Magazine / Featured Articles List -->
+        <div id="stories-section" class="py-24 max-w-4xl mx-auto px-6">
+            <div class="mb-12 border-b border-gray-200 pb-6 flex items-end justify-between">
+               <div>
+                  <h2 class="text-3xl font-bold text-gray-900 mb-2 font-serif">Time Capsuffle Magazine</h2>
+                  <p class="text-gray-500">디지털 아카이빙과 추억에 관한 에세이</p>
+               </div>
+               <a routerLink="/blog" class="hidden md:block text-sm font-bold text-gray-400 hover:text-indigo-600 transition">전체보기</a>
+            </div>
+
+            <div class="flex flex-col gap-16">
+               @for (post of blogPosts().slice(0, 5); track post.id) {
+                  <article class="flex flex-col md:flex-row gap-8 items-start group cursor-pointer" [routerLink]="['/blog', post.id]">
+                     <div class="w-full md:w-64 h-48 flex-shrink-0 overflow-hidden rounded-2xl bg-gray-100 relative shadow-md">
+                        <img [src]="post.imageUrl" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" [alt]="post.title">
+                        <div class="absolute inset-0 bg-black/5 group-hover:bg-transparent transition"></div>
+                     </div>
+                     <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-3">
+                           <span class="px-2 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-md uppercase tracking-wider">{{ post.category }}</span>
+                           <span class="text-xs text-gray-400">{{ post.date }}</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-3 group-hover:text-indigo-600 transition-colors leading-tight">
+                           {{ post.title }}
+                        </h3>
+                        <p class="text-gray-600 leading-relaxed mb-4 line-clamp-3 md:line-clamp-2">
+                           {{ post.excerpt }}
+                        </p>
+                        <div class="text-indigo-600 font-bold text-sm group-hover:underline flex items-center gap-1">
+                           Read Article 
+                           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                        </div>
+                     </div>
+                  </article>
+               }
+            </div>
+            
+            <div class="mt-16 text-center">
+               <a routerLink="/blog" class="inline-block px-8 py-4 border border-gray-300 rounded-full font-bold text-gray-700 hover:bg-gray-50 transition hover:border-gray-400">
+                  매거진 전체보기
+               </a>
+            </div>
+        </div>
+
       </main>
 
-      <!-- Footer Section (AdSense Value) -->
+      <!-- Footer Section -->
       <footer class="bg-stone-900 text-stone-400 py-20 border-t border-stone-800">
          <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 text-sm">
             <div class="col-span-1 md:col-span-2">
@@ -376,23 +360,27 @@ import { DatePipe, CommonModule } from '@angular/common';
             <div>
                <h4 class="text-white font-bold mb-6 uppercase tracking-wider text-xs">Platform</h4>
                <ul class="space-y-3">
-                  <li><a routerLink="/home" fragment="capsule-section" class="hover:text-white transition">공개 캡슐</a></li>
+                  <li><a routerLink="/about" class="hover:text-white transition">서비스 소개 (About Us)</a></li>
+                  <li><a routerLink="/blog" class="hover:text-white transition">이용 가이드 (Blog)</a></li>
                   <li><a routerLink="/home" class="hover:text-white transition">실시간 캔버스</a></li>
-                  <li><a routerLink="/home" class="hover:text-white transition">AI 이미지 생성</a></li>
-                  <li><a routerLink="/home" class="hover:text-white transition">업데이트 노트</a></li>
                </ul>
             </div>
             <div>
                <h4 class="text-white font-bold mb-6 uppercase tracking-wider text-xs">Legal & Support</h4>
                <ul class="space-y-3">
-                  <li><a routerLink="/terms" class="hover:text-white transition">이용약관</a></li>
-                  <li><a routerLink="/privacy" class="hover:text-white transition">개인정보처리방침</a></li>
+                  <li><a routerLink="/terms" class="hover:text-white transition">이용약관 (Terms)</a></li>
+                  <li><a routerLink="/privacy" class="hover:text-white transition">개인정보처리방침 (Privacy)</a></li>
+                  <li><a routerLink="/contact" class="hover:text-white transition">문의하기 (Contact)</a></li>
                </ul>
             </div>
          </div>
          <div class="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-stone-800 flex flex-col md:flex-row justify-between items-center text-xs text-stone-600">
             <p>© 2024 Time Capsuffle Project. All rights reserved.</p>
-            <p class="mt-2 md:mt-0">Designed for Memories.</p>
+            <div class="mt-2 md:mt-0 flex gap-4 items-center">
+               <span>Seoul, Republic of Korea</span>
+               <span class="w-1 h-1 bg-stone-700 rounded-full"></span>
+               <a href="mailto:DEUSUNGJIN@GMAIL.COM" class="hover:text-white transition">DEUSUNGJIN@GMAIL.COM</a>
+            </div>
          </div>
       </footer>
 
@@ -407,6 +395,7 @@ import { DatePipe, CommonModule } from '@angular/common';
     .animate-float-slow { animation: float 8s ease-in-out infinite; }
     .animate-float-delayed { animation: float 7s ease-in-out infinite 1s; }
     .animate-scroll-down { animation: scrollDown 1.5s infinite; }
+    .animate-fade-in { animation: fadeIn 0.3s ease-out; }
     .break-keep { word-break: keep-all; }
     
     @keyframes float {
@@ -419,17 +408,29 @@ import { DatePipe, CommonModule } from '@angular/common';
        0% { transform: translateY(0); opacity: 1; }
        100% { transform: translateY(12px); opacity: 0; }
     }
+    
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Voice Wave Animation */
+    .animate-wave { animation: wave 1.2s ease-in-out infinite; }
+    @keyframes wave {
+      0%, 100% { height: 30%; opacity: 0.6; }
+      50% { height: 100%; opacity: 1; }
+    }
   `]
 })
 export class HomeComponent implements AfterViewInit {
-  capsuleService = inject(CapsuleService);
-  authService = inject(AuthService);
-  router = inject(Router);
-  activatedRoute = inject(ActivatedRoute);
+  capsuleService: CapsuleService = inject(CapsuleService);
+  authService: AuthService = inject(AuthService);
+  blogService: BlogService = inject(BlogService);
+  router: Router = inject(Router);
+  activatedRoute: ActivatedRoute = inject(ActivatedRoute);
+  
   showModal = signal(false);
-
+  
   capsules = this.capsuleService.capsules;
   archives = this.capsuleService.archives;
+  blogPosts = this.blogService.posts;
 
   systemCapsules = [
     { type: '1d', num: '24', unit: 'HOURS', unitLabel: '시간', desc: '하루 동안만 유지되는 찰나의 기록' },
@@ -439,7 +440,6 @@ export class HomeComponent implements AfterViewInit {
   ];
 
   ngAfterViewInit() {
-    // Handle scrolling if fragment is present
     this.activatedRoute.fragment.subscribe(fragment => {
        if (fragment) {
           setTimeout(() => {
@@ -465,13 +465,7 @@ export class HomeComponent implements AfterViewInit {
   }
 
   handleCreateCapsule() {
-    if (this.authService.currentUser()) {
-      this.showModal.set(true);
-    } else {
-      if(confirm('개인 캡슐을 만드려면 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?')) {
-        this.router.navigate(['/login']);
-      }
-    }
+    alert("개인 캡슐 생성은 현재 개발 중입니다. 공개 캡슐을 이용해주세요!");
   }
 
   scrollToCapsules() {

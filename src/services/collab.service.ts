@@ -19,7 +19,7 @@ export interface ChatMessage {
 }
 
 export interface CollabMessage {
-  type: 'CURSOR' | 'JOIN' | 'LEAVE' | 'ITEM_UPDATE' | 'ITEM_ADD' | 'CHAT' | 'CAPSULE_RESET';
+  type: 'CURSOR' | 'JOIN' | 'LEAVE' | 'ITEM_UPDATE' | 'ITEM_ADD' | 'CHAT' | 'CAPSULE_RESET' | 'VOTE_START' | 'CAST_VOTE' | 'VOTE_END' | 'GAME_EVENT' | 'CHARACTER_UPDATE';
   payload: any;
   capsuleId: string;
   senderId: string;
@@ -36,6 +36,9 @@ export class CollabService implements OnDestroy {
   remoteUpdates = signal<any>(null); // Trigger for items update
   chatMessages = signal<ChatMessage[]>([]);
   notifications = signal<string[]>([]);
+  
+  // Game Signals
+  gameEvents = signal<any>(null);
 
   private myId = '';
   private currentCapsuleId = '';
@@ -110,6 +113,28 @@ export class CollabService implements OnDestroy {
     this.chatMessages.update(msgs => [...msgs, msg]);
     this.sendMessage('CHAT', msg);
   }
+  
+  // --- Game, Character & Voting Methods ---
+  
+  broadcastCharacterUpdate(characterPayload: any) {
+    this.sendMessage('CHARACTER_UPDATE', characterPayload);
+  }
+  
+  broadcastVoteStart(endTime: number) {
+    this.sendMessage('VOTE_START', { endTime });
+  }
+
+  broadcastCastVote(itemId: string) {
+    this.sendMessage('CAST_VOTE', { itemId, userId: this.myId });
+  }
+
+  broadcastVoteEnd(winnerId: string | null) {
+    this.sendMessage('VOTE_END', { winnerId });
+  }
+
+  broadcastGameEvent(eventType: 'LAUNCH' | 'DAMAGE' | 'DESTROY', data: any) {
+    this.sendMessage('GAME_EVENT', { eventType, data, senderId: this.myId });
+  }
 
   private sendMessage(type: CollabMessage['type'], payload: any) {
     const msg: CollabMessage = {
@@ -140,10 +165,17 @@ export class CollabService implements OnDestroy {
       case 'ITEM_UPDATE':
       case 'ITEM_ADD':
       case 'CAPSULE_RESET':
-        this.remoteUpdates.set({ type: msg.type, timestamp: Date.now() });
+      case 'CHARACTER_UPDATE':
+        this.remoteUpdates.set({ type: msg.type, timestamp: Date.now(), payload: msg.payload });
         break;
       case 'CHAT':
         this.chatMessages.update(msgs => [...msgs, msg.payload]);
+        break;
+      case 'VOTE_START':
+      case 'CAST_VOTE':
+      case 'VOTE_END':
+      case 'GAME_EVENT':
+        this.gameEvents.set({ type: msg.type, payload: msg.payload, timestamp: Date.now() });
         break;
     }
   }
@@ -165,7 +197,7 @@ export class CollabService implements OnDestroy {
     this.activeCursors.update(cursors => cursors.filter(c => c.userId !== userId));
   }
 
-  private addNotification(text: string) {
+  addNotification(text: string) {
     this.notifications.update(n => [text, ...n].slice(0, 3));
     setTimeout(() => {
       this.notifications.update(n => n.filter(x => x !== text));
